@@ -10,11 +10,14 @@ VIEWS_SRC="/config/myapp/views"
 VIEWS_WWW="/config/www/views"
 PACKAGES="/config/packages"
 
+WWW_OWNER=$(stat -c '%U:%G' "$VIEWS_WWW" 2>/dev/null || echo "")
+
 for view_dir in "$VIEWS_SRC"/*/; do
     name=$(basename "$view_dir")
     mkdir -p "$VIEWS_WWW/$name"
     cp "$view_dir/index.html" "$VIEWS_WWW/$name/index.html"
     cp "$view_dir/card.yaml"  "$PACKAGES/views_${name//-/_}.yaml"
+    [ -n "$WWW_OWNER" ] && chown -R "$WWW_OWNER" "$VIEWS_WWW/$name" 2>/dev/null || true
     echo "deployed: $name"
 done
 
