@@ -42,12 +42,13 @@ def run():
     entity_roles = {}  # entity_id -> "grid_from" | "grid_to" | "solar"
     for source in prefs.get("energy_sources", []):
         if source["type"] == "grid":
-            for flow in source.get("flow_from", []):
-                entity_roles[flow["stat_energy_from"]] = "grid_from"
-            for flow in source.get("flow_to", []):
-                entity_roles[flow["stat_energy_to"]] = "grid_to"
+            if source.get("stat_energy_from"):
+                entity_roles[source["stat_energy_from"]] = "grid_from"
+            if source.get("stat_energy_to"):
+                entity_roles[source["stat_energy_to"]] = "grid_to"
         elif source["type"] == "solar":
-            entity_roles[source["stat_energy_from"]] = "solar"
+            if source.get("stat_energy_from"):
+                entity_roles[source["stat_energy_from"]] = "solar"
 
     if not entity_roles:
         raise RuntimeError("No energy entities in HA energy config")
@@ -77,7 +78,10 @@ def run():
         if target is None:
             continue
         for row in rows:
-            h = datetime.fromisoformat(row["start"]).astimezone(BANGKOK).hour
+            s = row["start"]
+            ms = s if isinstance(s, (int, float)) else int(datetime.fromisoformat(s).timestamp() * 1000)
+            t = datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
+            h = t.astimezone(BANGKOK).hour
             v = row.get("change") or 0
             if v and v > 0:
                 target[h] = target.get(h, 0.0) + v
