@@ -1,0 +1,213 @@
+<!--
+  power-flow — standalone view for power-flow-card-plus
+  Source : /config/myapp/views/power-flow/index.html
+  Served : /local/views/power-flow/
+  Data   : /local/views/power-flow/data.json  (written by update.py every 15 s)
+
+  URL parameters (all optional):
+    name-grid=Grid            name-solar=Solar
+    name-house=Wit+House      name-fossil=Non+Fossil
+    name=Page+Title
+    w_decimals=0              kw_decimals=1
+    min_flow_rate=0.5         max_flow_rate=7
+    max_expected_power=5000   min_expected_power=0.01
+    watt_threshold=1000       color_icon=true
+    clickable_entities=true
+-->
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Flow</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #03a9f4;
+      --accent-color: #ff9800;
+      --ha-card-border-radius: 12px;
+      --ha-card-box-shadow: none;
+      --energy-grid-consumption-color: #488fc2;
+      --energy-grid-return-color: #8353d1;
+      --energy-solar-color: #ff9800;
+      --energy-non-fossil-color: #0f9d58;
+      --energy-battery-in-color: #f06292;
+      --energy-battery-out-color: #4db6ac;
+      --energy-home-color: #3f9142;
+      --mdc-theme-primary: #03a9f4;
+      --mdc-typography-font-family: 'Roboto', sans-serif;
+      --primary-text-color: #212121;
+      --secondary-text-color: #727272;
+      --disabled-text-color: #bdbdbd;
+      --primary-background-color: #fafafa;
+      --secondary-background-color: #e5e5e5;
+      --card-background-color: #ffffff;
+      --ha-card-background: #ffffff;
+      --divider-color: rgba(0,0,0,0.12);
+      color-scheme: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary-text-color: #e1e1e1;
+        --secondary-text-color: #9b9b9b;
+        --disabled-text-color: #6f6f6f;
+        --primary-background-color: #111827;
+        --secondary-background-color: #1f2937;
+        --card-background-color: #1f2937;
+        --ha-card-background: #1f2937;
+        --divider-color: rgba(225,225,225,0.12);
+      }
+    }
+    html, body { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: var(--primary-background-color); font-family: 'Roboto', sans-serif; }
+    #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box; padding: 8px; }
+    #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); padding: 0 0 4px; letter-spacing: 0.04em; text-transform: uppercase; display: none; }
+    power-flow-card-plus { display: block; width: 100%; max-width: 502px; }
+  </style>
+</head>
+<body>
+<div id="wrap">
+  <div id="view-name"></div>
+</div>
+
+<script type="module">
+  customElements.define('hui-card', class extends HTMLElement {
+    connectedCallback() { this.style.display = 'block'; }
+  });
+
+  customElements.define('ha-card', class extends HTMLElement {
+    connectedCallback() { this.style.display = 'block'; this.style.overflow = 'hidden'; }
+  });
+
+  customElements.define('ha-ripple', class extends HTMLElement {
+    connectedCallback() { this.style.display = 'none'; }
+  });
+
+  const mdi = await import('/local/mdi.min.js');
+
+  function mdiPath(iconName) {
+    if (!iconName) return '';
+    const key = 'mdi' + iconName.replace('mdi:', '')
+      .split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+    return mdi[key] || '';
+  }
+
+  function makeSvg(path, sizePx) {
+    return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+      style="display:inline-block;width:${sizePx}px;height:${sizePx}px;fill:currentColor;vertical-align:middle"
+      preserveAspectRatio="xMidYMid meet" focusable="false" aria-hidden="true">
+      <path d="${path}"/>
+    </svg>`;
+  }
+
+  customElements.define('ha-svg-icon', class extends HTMLElement {
+    constructor() { super(); this.attachShadow({mode:'open'}); }
+    set path(v) { this._path = v; this._render(); }
+    get path() { return this._path; }
+    static get observedAttributes() { return ['path']; }
+    attributeChangedCallback(n, _, v) { if (n === 'path') { this._path = v; this._render(); } }
+    connectedCallback() { this._render(); }
+    _render() { this.shadowRoot.innerHTML = makeSvg(this._path || '', 24); }
+  });
+
+  customElements.define('ha-icon', class extends HTMLElement {
+    constructor() { super(); this.attachShadow({mode:'open'}); }
+    set icon(v) { this._icon = v; this._render(); }
+    get icon() { return this._icon; }
+    static get observedAttributes() { return ['icon']; }
+    attributeChangedCallback(n, _, v) { if (n === 'icon') { this._icon = v; this._render(); } }
+    connectedCallback() { this._render(); }
+    _render() {
+      const sz = this.classList.contains('small') ? 12 : 24;
+      this.shadowRoot.innerHTML = makeSvg(mdiPath(this._icon), sz);
+    }
+  });
+
+  await import('/local/community/power-flow-card-plus/power-flow-card-plus.js?v=8');
+  await customElements.whenDefined('power-flow-card-plus');
+
+  const card = document.createElement('power-flow-card-plus');
+  const p = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
+  const num  = (key, def) => { const v = p.get(key); return v !== null ? Number(v) : def; };
+  const bool = (key, def) => { const v = p.get(key); return v !== null ? v !== 'false' : def; };
+  const colorIcon = bool('color_icon', true);
+
+  card.setConfig({
+    type: "custom:power-flow-card-plus",
+    entities: {
+      grid:  { entity: "sensor.wit_grid_w",
+               name: p.get('name-grid')   || "Grid",       color_icon: colorIcon },
+      solar: { entity: "sensor.wit_solar_w", display_zero_state: null,
+               name: p.get('name-solar')  || "Solar",      color_icon: colorIcon },
+      home:  { entity: "sensor.wit_house_kw",
+               name: p.get('name-house')  || "Wit House",  color_icon: colorIcon },
+      fossil_fuel_percentage: { entity: "sensor.electricity_maps_grid_fossil_fuel_percentage",
+               display_zero: true, state_type: "power",
+               name: p.get('name-fossil') || "Non Fossil", color_icon: colorIcon }
+    },
+    color_icon:             colorIcon,
+    clickable_entities:     bool('clickable_entities',  true),
+    display_zero_lines:     true,
+    use_new_flow_rate_model: true,
+    w_decimals:             num('w_decimals',           0),
+    kw_decimals:            num('kw_decimals',          1),
+    min_flow_rate:          num('min_flow_rate',        0.5),
+    max_flow_rate:          num('max_flow_rate',        7),
+    max_expected_power:     num('max_expected_power',   5000),
+    min_expected_power:     num('min_expected_power',   0.01),
+    watt_threshold:         num('watt_threshold',       1000),
+    grid_options: { rows: "auto" }
+  });
+
+  const viewName = p.get('name');
+  if (viewName) {
+    const el = document.getElementById('view-name');
+    el.textContent = viewName;
+    el.style.display = 'block';
+    document.title = viewName;
+  }
+
+  document.getElementById('wrap').appendChild(card);
+
+  card.updateComplete.then(() => {
+    if (card.shadowRoot) {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(`
+        .card-content { padding: 16px }
+        .circle-container.grid .label,
+        .circle-container.home .label { margin-top: 4px }
+      `);
+      card.shadowRoot.adoptedStyleSheets = [...card.shadowRoot.adoptedStyleSheets, sheet];
+    }
+  });
+
+  async function refresh() {
+    try {
+      const res = await fetch('/local/views/power-flow/data.json?t=' + Date.now());
+      const states = await res.json();
+      if (states._error) return;
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      card.hass = {
+        states,
+        localize: (key) => key.split('.').pop().replace(/_/g, ' '),
+        locale: { language: "th", number_format: "decimal_dot", time_format: "language", date_format: "language", first_weekday: "monday" },
+        config: {
+          unit_system: { energy: "kWh", power: "W", length: "km", mass: "kg", pressure: "Pa", temperature: "°C", volume: "L" },
+          currency: "THB", country: "TH", time_zone: "Asia/Bangkok"
+        },
+        user: { is_admin: false, name: "monitor" },
+        themes: { darkMode: dark, theme: "default" },
+        selectedTheme: { dark: dark },
+        connected: true,
+        callService: () => Promise.resolve(),
+        callApi:     () => Promise.resolve()
+      };
+    } catch (e) {}
+  }
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+  refresh();
+  setInterval(refresh, 15000);
+</script>
+</body>
+</html>
