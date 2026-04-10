@@ -120,16 +120,15 @@
         max: data.end_ms + 3600000,
         axisLabel: {
           color: subtextColor,
-          fontSize: 11,
+          fontSize: 12,
           formatter: (val) => {
             const d = new Date(val);
-            const h = d.getHours(), m = d.getMinutes();
-            if (h === 0 && m === 0) {
-              return `{date|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
+            if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
+              return `{bold|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
             }
-            return `${String(h).padStart(2, '0')}:00`;
+            return `${String(d.getHours()).padStart(2, '0')}:00`;
           },
-          rich: { date: { fontWeight: 'bold', color: subtextColor, fontSize: 11 } },
+          rich: { bold: { fontWeight: 'bold', color: subtextColor, fontSize: 12 } },
         },
         splitLine: { show: false },
         axisLine: { lineStyle: { color: dividerColor } },
@@ -139,17 +138,19 @@
         type: 'value',
         name: 'kWh',
         nameGap: 2,
-        nameTextStyle: { align: 'left', color: subtextColor, fontSize: 11 },
+        nameTextStyle: { align: 'left', color: subtextColor, fontSize: 12 },
         axisLabel: {
           color: subtextColor,
-          fontSize: 11,
-          formatter: (v, i, ticks) => {
-            const abs = Math.abs(v);
-            const prev = ticks?.[i - 1]?.value;
-            const diff = Math.abs(v - (prev ?? v)) || 1;
-            const decimals = Math.max(0, -Math.floor(Math.log10(diff)));
-            return abs.toFixed(decimals);
-          },
+          fontSize: 12,
+          formatter: (() => {
+            let prev;
+            return (v) => {
+              const diff = Math.abs(v - (prev ?? v)) || 1;
+              prev = v;
+              const decimals = Math.max(0, -Math.floor(Math.log10(diff)));
+              return v.toFixed(decimals);
+            };
+          })(),
         },
         splitLine: { lineStyle: { color: dividerColor, type: 'dashed' } },
       },
