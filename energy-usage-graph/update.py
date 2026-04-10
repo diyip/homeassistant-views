@@ -92,7 +92,7 @@ def run():
     def hour_ts(h):
         return int((start + timedelta(hours=h, minutes=30)).timestamp() * 1000)
 
-    end_of_today = start + timedelta(days=1)  # midnight tomorrow = full 24h x-axis like HA
+    end_of_today = start + timedelta(hours=23)  # HA: getSuggestedMax rounds endOfToday() down to 23:00
 
     result = {
         "date":          now.strftime("%Y-%m-%d"),

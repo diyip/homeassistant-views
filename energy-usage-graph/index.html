@@ -137,8 +137,9 @@
           rich: { bold: { fontWeight: 'bold' } },
         },
         splitLine: { show: true, lineStyle: { color: dividerColor } },
-        axisLine: { lineStyle: { color: dividerColor } },
-        axisTick: { lineStyle: { color: dividerColor } },
+        axisLine:  { lineStyle: { color: dividerColor } },
+        axisTick:  { lineStyle: { color: dividerColor } },
+        boundaryGap: false,
       },
       yAxis: {
         type: 'value',
@@ -158,7 +159,7 @@
             };
           })(),
         },
-        splitLine: { lineStyle: { color: dividerColor, type: 'dashed' } },
+        splitLine: { lineStyle: { color: dividerColor } },
       },
       tooltip: {
         trigger: 'axis',
