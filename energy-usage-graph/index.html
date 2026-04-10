@@ -1,7 +1,7 @@
 <!--
   energy-usage-graph — standalone view, today's hourly energy usage
   Source : /config/myapp/views/energy-usage-graph/index.html
-  Served : /local/views/energy-usage-graph/
+  Served : /local/views/energy-usage-graph/index.html
   Data   : /local/views/energy-usage-graph/data.json  (written by update.py every 5 min)
 
   URL parameters (all optional):
@@ -20,7 +20,6 @@
     :root {
       --primary-background-color: #fafafa;
       --card-background-color: #ffffff;
-      --primary-text-color: #212121;
       --secondary-text-color: #727272;
       --divider-color: rgba(0,0,0,0.12);
       --energy-grid-consumption-color: #488fc2;
@@ -31,17 +30,15 @@
       :root {
         --primary-background-color: #111827;
         --card-background-color: #1f2937;
-        --primary-text-color: #e1e1e1;
         --secondary-text-color: #9b9b9b;
         --divider-color: rgba(225,225,225,0.12);
       }
     }
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--primary-background-color); font-family: 'Roboto', sans-serif; }
-    #wrap { display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; box-sizing: border-box; padding: 8px; }
-    #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); padding: 0 0 4px; letter-spacing: 0.04em; text-transform: uppercase; display: none; }
-    #chart-card { background: var(--card-background-color); border-radius: 12px; width: 100%; max-width: 700px; padding: 16px; box-sizing: border-box; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-    #chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-    #chart-date { font-size: 13px; color: var(--secondary-text-color); }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--primary-background-color); font-family: 'Roboto', sans-serif; }
+    #wrap { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; padding: 8px; gap: 4px; }
+    #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); letter-spacing: 0.04em; text-transform: uppercase; display: none; flex-shrink: 0; }
+    #chart-card { background: var(--card-background-color); border-radius: 12px; flex: 1; min-height: 0; padding: 16px 8px 8px 8px; box-sizing: border-box; display: flex; flex-direction: column; }
+    #chart-date { font-size: 13px; color: var(--secondary-text-color); padding: 0 8px 4px; flex-shrink: 0; }
     #chart { flex: 1; min-height: 0; }
     #error { color: #ef5350; font-size: 13px; padding: 16px; display: none; }
   </style>
@@ -50,16 +47,14 @@
 <div id="wrap">
   <div id="view-name"></div>
   <div id="chart-card">
-    <div id="chart-header">
-      <div id="chart-date"></div>
-    </div>
+    <div id="chart-date"></div>
     <div id="chart"></div>
     <div id="error"></div>
   </div>
 </div>
 
 <script>
-  const p = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
+  const p    = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   const viewName = p.get('name');
@@ -70,27 +65,35 @@
     document.title = viewName;
   }
 
-  const CSS = getComputedStyle(document.documentElement);
-  const textColor      = CSS.getPropertyValue('--primary-text-color').trim();
-  const subtextColor   = CSS.getPropertyValue('--secondary-text-color').trim();
-  const gridColor      = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
-  const solarColor     = CSS.getPropertyValue('--energy-solar-color').trim();
-  const exportColor    = CSS.getPropertyValue('--energy-grid-return-color').trim();
-  const cardBg         = CSS.getPropertyValue('--card-background-color').trim();
-  const dividerColor   = CSS.getPropertyValue('--divider-color').trim();
+  const CSS          = getComputedStyle(document.documentElement);
+  const subtextColor = CSS.getPropertyValue('--secondary-text-color').trim();
+  const dividerColor = CSS.getPropertyValue('--divider-color').trim();
+  const gridColor    = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
+  const solarColor   = CSS.getPropertyValue('--energy-solar-color').trim();
+  const exportColor  = CSS.getPropertyValue('--energy-grid-return-color').trim();
 
   let chart = null;
+
+  function chartHeight() {
+    const card   = document.getElementById('chart-card');
+    const date   = document.getElementById('chart-date');
+    return card.clientHeight - date.clientHeight - 32;
+  }
+
+  function xLabels(hours) {
+    return hours.map((h, i) => i % 4 === 0 ? h : '');
+  }
 
   function buildOptions(data) {
     return {
       chart: {
         type: 'bar',
         stacked: true,
+        height: chartHeight(),
         background: 'transparent',
         toolbar: { show: false },
         animations: { enabled: false },
         fontFamily: 'Roboto, sans-serif',
-        height: '100%',
         foreColor: subtextColor,
       },
       series: [
@@ -102,36 +105,42 @@
       xaxis: {
         categories: data.hours,
         labels: {
-          rotate: -45,
+          rotate: 0,
+          formatter: (val, i) => (typeof i === 'number' && i % 4 === 0) ? val : '',
           style: { colors: subtextColor, fontSize: '11px' },
         },
         axisBorder: { color: dividerColor },
         axisTicks:  { color: dividerColor },
+        tooltip:    { enabled: false },
       },
       yaxis: {
         labels: {
-          formatter: v => Math.abs(v).toFixed(2),
+          formatter: v => Math.abs(v).toFixed(1),
           style: { colors: subtextColor, fontSize: '11px' },
         },
-        title: { text: 'kWh', style: { color: subtextColor, fontSize: '11px' } },
+        title: { text: 'kWh', style: { color: subtextColor, fontSize: '11px', fontWeight: 400 } },
       },
       tooltip: {
         theme: dark ? 'dark' : 'light',
+        x: { formatter: (_, { dataPointIndex, w }) => w.globals.labels[dataPointIndex] },
         y: { formatter: v => Math.abs(v).toFixed(3) + ' kWh' },
       },
       legend: {
         position: 'top',
         horizontalAlign: 'left',
+        offsetX: 8,
         labels: { colors: subtextColor },
         markers: { width: 10, height: 10, radius: 2 },
+        itemMargin: { horizontal: 12 },
       },
       dataLabels: { enabled: false },
       grid: {
         borderColor: dividerColor,
         strokeDashArray: 3,
+        padding: { left: 4, right: 4 },
       },
       plotOptions: {
-        bar: { columnWidth: '70%', borderRadius: 2 },
+        bar: { columnWidth: '80%', borderRadius: 2, borderRadiusApplication: 'end' },
       },
       theme: { mode: dark ? 'dark' : 'light' },
     };
@@ -139,7 +148,7 @@
 
   async function refresh() {
     try {
-      const res = await fetch('/local/views/energy-usage-graph/data.json?t=' + Date.now());
+      const res  = await fetch('/local/views/energy-usage-graph/data.json?t=' + Date.now());
       const data = await res.json();
 
       if (data._error) {
@@ -148,24 +157,28 @@
         return;
       }
       document.getElementById('error').style.display = 'none';
-
-      const dateEl = document.getElementById('chart-date');
-      dateEl.textContent = data.date || '';
+      document.getElementById('chart-date').textContent = data.date || '';
 
       if (!chart) {
         chart = new ApexCharts(document.getElementById('chart'), buildOptions(data));
         chart.render();
       } else {
+        chart.updateOptions({
+          chart: { height: chartHeight() },
+          xaxis: { categories: data.hours },
+        }, false, false);
         chart.updateSeries([
           { name: 'Grid consumed', data: data.grid_consumed },
           { name: 'Solar used',    data: data.solar_used },
           { name: 'Grid exported', data: data.grid_exported },
-        ]);
-        chart.updateOptions({ xaxis: { categories: data.hours } }, false, false);
+        ], false);
       }
     } catch (e) {}
   }
 
+  window.addEventListener('resize', () => {
+    if (chart) chart.updateOptions({ chart: { height: chartHeight() } }, false, false);
+  });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
 
   refresh();
