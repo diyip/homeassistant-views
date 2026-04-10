@@ -188,14 +188,15 @@
         },
       },
       series: seriesList.map(s => ({
-        name:        s.name,
-        type:        'bar',
-        stack:       'usage',
-        barMaxWidth: 50,
-        color:       s.fill,
-        itemStyle:   { borderColor: s.border, borderWidth: 0 },
-        data:        s.data,
-        emphasis:    { disabled: true },
+        name:            s.name,
+        type:            'bar',
+        stack:           'usage',
+        barMaxWidth:     50,
+        barCategoryGap:  '10%',
+        color:           s.fill,
+        itemStyle:       { borderColor: s.border, borderWidth: 0 },
+        data:            s.data,
+        emphasis:        { disabled: true },
       })),
     };
   }
