@@ -56,35 +56,48 @@ def run():
     now   = datetime.now(BANGKOK)
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    ws.send(json.dumps({
-        "id": 2,
-        "type": "recorder/statistics_during_period",
-        "start_time": start.isoformat(),
-        "end_time":   now.isoformat(),
-        "statistic_ids": list(entity_roles),
-        "period": "hour",
-        "types": ["change"],
-    }))
-    stats = recv_id(ws, 2)
+    def fetch_stats(start_dt, end_dt, msg_id):
+        ws.send(json.dumps({
+            "id": msg_id,
+            "type": "recorder/statistics_during_period",
+            "start_time": start_dt.isoformat(),
+            "end_time":   end_dt.isoformat(),
+            "statistic_ids": list(entity_roles),
+            "period": "hour",
+            "types": ["change"],
+        }))
+        return recv_id(ws, msg_id)
+
+    def parse_stats(stats, day_start):
+        grid_from, grid_to, solar = {}, {}, {}
+        for eid, rows in (stats or {}).items():
+            role = entity_roles.get(eid)
+            target = {"grid_from": grid_from, "grid_to": grid_to, "solar": solar}.get(role)
+            if target is None:
+                continue
+            for row in rows:
+                s = row["start"]
+                ms = s if isinstance(s, (int, float)) else int(datetime.fromisoformat(s).timestamp() * 1000)
+                t = datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
+                h = t.astimezone(BANGKOK).hour
+                v = row.get("change") or 0
+                if v and v > 0:
+                    target[h] = target.get(h, 0.0) + v
+        return grid_from, grid_to, solar
+
+    # Fetch today; fall back to yesterday if today has no data yet
+    stats = fetch_stats(start, now, 2)
+    grid_from, grid_to, solar = parse_stats(stats, start)
+
+    if not (grid_from or grid_to or solar):
+        yesterday_start = start - timedelta(days=1)
+        yesterday_end   = start  # midnight = end of yesterday
+        stats = fetch_stats(yesterday_start, yesterday_end, 3)
+        grid_from, grid_to, solar = parse_stats(stats, yesterday_start)
+        start = yesterday_start
+        now   = yesterday_end - timedelta(seconds=1)
+
     ws.close()
-
-    grid_from = {}
-    grid_to   = {}
-    solar     = {}
-
-    for eid, rows in (stats or {}).items():
-        role = entity_roles.get(eid)
-        target = {"grid_from": grid_from, "grid_to": grid_to, "solar": solar}.get(role)
-        if target is None:
-            continue
-        for row in rows:
-            s = row["start"]
-            ms = s if isinstance(s, (int, float)) else int(datetime.fromisoformat(s).timestamp() * 1000)
-            t = datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
-            h = t.astimezone(BANGKOK).hour
-            v = row.get("change") or 0
-            if v and v > 0:
-                target[h] = target.get(h, 0.0) + v
 
     all_hours = sorted(set(grid_from) | set(grid_to) | set(solar))
 
