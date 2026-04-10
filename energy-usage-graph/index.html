@@ -129,8 +129,12 @@
           hideOverlap: true,
           formatter: (val) => {
             const d = new Date(val);
+            if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
+              return `{bold|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
+            }
             return `${String(d.getHours()).padStart(2, '0')}:00`;
           },
+          rich: { bold: { fontWeight: 'bold' } },
         },
         splitLine: { show: false },
         axisLine: { lineStyle: { color: dividerColor } },
@@ -189,7 +193,7 @@
         stack:       'usage',
         barMaxWidth: 35,
         color:       s.fill,
-        itemStyle:   { borderColor: s.border, borderWidth: 1.5 },
+        itemStyle:   { borderColor: s.border, borderWidth: 0 },
         data:        s.data,
         emphasis:    { disabled: true },
       })),
