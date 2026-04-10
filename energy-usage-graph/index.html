@@ -71,6 +71,10 @@
   const gridColor    = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
   const solarColor   = CSS.getPropertyValue('--energy-solar-color').trim();
   const exportColor  = CSS.getPropertyValue('--energy-grid-return-color').trim();
+  // HA uses 50% alpha fill + full-opacity border (getEnergyColor appends "7F")
+  const gridFill   = gridColor   + '7F';
+  const solarFill  = solarColor  + '7F';
+  const exportFill = exportColor + '7F';
 
   const chart = echarts.init(document.getElementById('chart'), dark ? 'dark' : null, { renderer: 'canvas' });
 
@@ -78,7 +82,6 @@
   function applyRoundedCaps(seriesList) {
     const n = seriesList[0]?.data.length ?? 0;
     for (let i = 0; i < n; i++) {
-      // positive stack: find topmost non-zero series (last in render order)
       for (let s = seriesList.length - 1; s >= 0; s--) {
         const v = seriesList[s].data[i][1];
         if (v > 0) {
@@ -86,7 +89,6 @@
           break;
         }
       }
-      // negative stack: find bottommost non-zero series
       for (let s = seriesList.length - 1; s >= 0; s--) {
         const v = seriesList[s].data[i][1];
         if (v < 0) {
@@ -104,9 +106,9 @@
     const exp   = ts.map((t, i) => [t, data.grid_exported[i]]);
 
     const seriesList = [
-      { name: 'Solar used',    data: solar, color: solarColor  },
-      { name: 'Grid consumed', data: grid,  color: gridColor   },
-      { name: 'Grid exported', data: exp,   color: exportColor },
+      { name: 'Solar used',    data: solar, fill: solarFill,  border: solarColor  },
+      { name: 'Grid consumed', data: grid,  fill: gridFill,   border: gridColor   },
+      { name: 'Grid exported', data: exp,   fill: exportFill, border: exportColor },
     ];
     applyRoundedCaps(seriesList);
 
@@ -182,13 +184,14 @@
         },
       },
       series: seriesList.map(s => ({
-        name:       s.name,
-        type:       'bar',
-        stack:      'usage',
-        barMaxWidth: 50,
-        color:      s.color,
-        data:       s.data,
-        emphasis:   { disabled: true },
+        name:        s.name,
+        type:        'bar',
+        stack:       'usage',
+        barMaxWidth: 35,
+        color:       s.fill,
+        itemStyle:   { borderColor: s.border, borderWidth: 0 },
+        data:        s.data,
+        emphasis:    { disabled: true },
       })),
     };
   }
