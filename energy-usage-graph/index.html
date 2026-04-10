@@ -15,7 +15,7 @@
   <title>Energy Usage</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <script src="/local/apexcharts.min.js"></script>
+  <script src="/local/echarts.min.js"></script>
   <style>
     :root {
       --primary-background-color: #fafafa;
@@ -36,11 +36,11 @@
     }
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--primary-background-color); font-family: 'Roboto', sans-serif; }
     #wrap { display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; padding: 8px; gap: 4px; }
-    #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); letter-spacing: 0.04em; text-transform: uppercase; display: none; flex-shrink: 0; }
-    #chart-card { background: var(--card-background-color); border-radius: 12px; flex: 1; min-height: 0; padding: 16px 8px 8px 8px; box-sizing: border-box; display: flex; flex-direction: column; }
-    #chart-date { font-size: 13px; color: var(--secondary-text-color); padding: 0 8px 4px; flex-shrink: 0; }
+    #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); letter-spacing: 0.04em; text-transform: uppercase; flex-shrink: 0; display: none; }
+    #chart-card { background: var(--card-background-color); border-radius: 12px; flex: 1; min-height: 0; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; }
+    #chart-date { font-size: 13px; color: var(--secondary-text-color); flex-shrink: 0; margin-bottom: 4px; }
     #chart { flex: 1; min-height: 0; }
-    #error { color: #ef5350; font-size: 13px; padding: 16px; display: none; }
+    #error { color: #ef5350; font-size: 13px; padding: 8px; display: none; }
   </style>
 </head>
 <body>
@@ -72,77 +72,119 @@
   const solarColor   = CSS.getPropertyValue('--energy-solar-color').trim();
   const exportColor  = CSS.getPropertyValue('--energy-grid-return-color').trim();
 
-  let chart = null;
+  const chart = echarts.init(document.getElementById('chart'), dark ? 'dark' : null, { renderer: 'canvas' });
 
-  function chartHeight() {
-    const card   = document.getElementById('chart-card');
-    const date   = document.getElementById('chart-date');
-    return card.clientHeight - date.clientHeight - 32;
+  // Apply rounded caps: top of highest positive bar, bottom of lowest negative bar
+  function applyRoundedCaps(seriesList) {
+    const n = seriesList[0]?.data.length ?? 0;
+    for (let i = 0; i < n; i++) {
+      // positive stack: find topmost non-zero series (last in render order)
+      for (let s = seriesList.length - 1; s >= 0; s--) {
+        const v = seriesList[s].data[i][1];
+        if (v > 0) {
+          seriesList[s].data[i] = { value: seriesList[s].data[i], itemStyle: { borderRadius: [4, 4, 0, 0] } };
+          break;
+        }
+      }
+      // negative stack: find bottommost non-zero series
+      for (let s = seriesList.length - 1; s >= 0; s--) {
+        const v = seriesList[s].data[i][1];
+        if (v < 0) {
+          seriesList[s].data[i] = { value: seriesList[s].data[i], itemStyle: { borderRadius: [0, 0, 4, 4] } };
+          break;
+        }
+      }
+    }
   }
 
-  function xLabels(hours) {
-    return hours.map((h, i) => i % 4 === 0 ? h : '');
-  }
+  function buildOption(data) {
+    const ts   = data.timestamps;
+    const solar = ts.map((t, i) => [t, data.solar_used[i]]);
+    const grid  = ts.map((t, i) => [t, data.grid_consumed[i]]);
+    const exp   = ts.map((t, i) => [t, data.grid_exported[i]]);
 
-  function buildOptions(data) {
+    const seriesList = [
+      { name: 'Solar used',    data: solar, color: solarColor  },
+      { name: 'Grid consumed', data: grid,  color: gridColor   },
+      { name: 'Grid exported', data: exp,   color: exportColor },
+    ];
+    applyRoundedCaps(seriesList);
+
     return {
-      chart: {
-        type: 'bar',
-        stacked: true,
-        height: chartHeight(),
-        background: 'transparent',
-        toolbar: { show: false },
-        animations: { enabled: false },
-        fontFamily: 'Roboto, sans-serif',
-        foreColor: subtextColor,
-      },
-      series: [
-        { name: 'Grid consumed', data: data.grid_consumed },
-        { name: 'Solar used',    data: data.solar_used },
-        { name: 'Grid exported', data: data.grid_exported },
-      ],
-      colors: [gridColor, solarColor, exportColor],
-      xaxis: {
-        categories: data.hours,
-        labels: {
-          rotate: 0,
-          formatter: (val, i) => (typeof i === 'number' && i % 4 === 0) ? val : '',
-          style: { colors: subtextColor, fontSize: '11px' },
+      backgroundColor: 'transparent',
+      textStyle: { fontFamily: 'Roboto, sans-serif', color: subtextColor },
+      grid: { top: 30, bottom: 0, left: 1, right: 1, containLabel: true },
+      xAxis: {
+        type: 'time',
+        min: data.start_ms,
+        max: data.end_ms + 3600000,
+        axisLabel: {
+          color: subtextColor,
+          fontSize: 11,
+          formatter: (val) => {
+            const d = new Date(val);
+            const h = d.getHours(), m = d.getMinutes();
+            if (h === 0 && m === 0) {
+              return `{date|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
+            }
+            return `${String(h).padStart(2, '0')}:00`;
+          },
+          rich: { date: { fontWeight: 'bold', color: subtextColor, fontSize: 11 } },
         },
-        axisBorder: { color: dividerColor },
-        axisTicks:  { color: dividerColor },
-        tooltip:    { enabled: false },
+        splitLine: { show: false },
+        axisLine: { lineStyle: { color: dividerColor } },
+        axisTick: { lineStyle: { color: dividerColor } },
       },
-      yaxis: {
-        labels: {
-          formatter: v => Math.abs(v).toFixed(1),
-          style: { colors: subtextColor, fontSize: '11px' },
+      yAxis: {
+        type: 'value',
+        name: 'kWh',
+        nameGap: 2,
+        nameTextStyle: { align: 'left', color: subtextColor, fontSize: 11 },
+        axisLabel: {
+          color: subtextColor,
+          fontSize: 11,
+          formatter: v => Math.abs(v) >= 1 ? Math.abs(v).toFixed(1) : Math.abs(v).toFixed(2),
         },
-        title: { text: 'kWh', style: { color: subtextColor, fontSize: '11px', fontWeight: 400 } },
-      },
-      tooltip: {
-        theme: dark ? 'dark' : 'light',
-        x: { formatter: (_, { dataPointIndex, w }) => w.globals.labels[dataPointIndex] },
-        y: { formatter: v => Math.abs(v).toFixed(3) + ' kWh' },
+        splitLine: { lineStyle: { color: dividerColor, type: 'dashed' } },
       },
       legend: {
-        position: 'top',
-        horizontalAlign: 'left',
-        offsetX: 8,
-        labels: { colors: subtextColor },
-        markers: { width: 10, height: 10, radius: 2 },
-        itemMargin: { horizontal: 12 },
+        top: 0,
+        left: 0,
+        icon: 'roundRect',
+        itemWidth: 10,
+        itemHeight: 10,
+        textStyle: { color: subtextColor, fontSize: 12 },
+        data: ['Solar used', 'Grid consumed', 'Grid exported'],
       },
-      dataLabels: { enabled: false },
-      grid: {
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: dark ? '#1f2937' : '#ffffff',
         borderColor: dividerColor,
-        strokeDashArray: 3,
-        padding: { left: 4, right: 4 },
+        textStyle: { color: dark ? '#e1e1e1' : '#212121', fontSize: 12 },
+        formatter: (params) => {
+          const ts = params[0]?.value[0];
+          if (!ts) return '';
+          const d   = new Date(ts - 30 * 60 * 1000); // back to hour start
+          const end = new Date(d.getTime() + 3600000);
+          const fmt = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+          let html = `<div style="font-weight:500;margin-bottom:4px">${fmt(d)} – ${fmt(end)}</div>`;
+          params.forEach(p => {
+            const v = p.value[1];
+            if (v === 0) return;
+            html += `<div>${p.marker} ${p.seriesName}: <b>${Math.abs(v).toFixed(3)} kWh</b></div>`;
+          });
+          return html;
+        },
       },
-      plotOptions: {
-        bar: { columnWidth: '80%', borderRadius: 2, borderRadiusApplication: 'end' },
-      },
-      theme: { mode: dark ? 'dark' : 'light' },
+      series: seriesList.map(s => ({
+        name:       s.name,
+        type:       'bar',
+        stack:      'usage',
+        barMaxWidth: 50,
+        color:      s.color,
+        data:       s.data,
+        emphasis:   { disabled: true },
+      })),
     };
   }
 
@@ -159,26 +201,11 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('chart-date').textContent = data.date || '';
 
-      if (!chart) {
-        chart = new ApexCharts(document.getElementById('chart'), buildOptions(data));
-        chart.render();
-      } else {
-        chart.updateOptions({
-          chart: { height: chartHeight() },
-          xaxis: { categories: data.hours },
-        }, false, false);
-        chart.updateSeries([
-          { name: 'Grid consumed', data: data.grid_consumed },
-          { name: 'Solar used',    data: data.solar_used },
-          { name: 'Grid exported', data: data.grid_exported },
-        ], false);
-      }
+      chart.setOption(buildOption(data), { notMerge: true });
     } catch (e) {}
   }
 
-  window.addEventListener('resize', () => {
-    if (chart) chart.updateOptions({ chart: { height: chartHeight() } }, false, false);
-  });
+  window.addEventListener('resize', () => chart.resize());
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => location.reload());
 
   refresh();

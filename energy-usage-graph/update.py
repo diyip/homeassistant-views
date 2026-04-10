@@ -88,9 +88,15 @@ def run():
 
     all_hours = sorted(set(grid_from) | set(grid_to) | set(solar))
 
+    # Midpoint timestamp for each hour (ms) — centers bars on the hour like HA does
+    def hour_ts(h):
+        return int((start + timedelta(hours=h, minutes=30)).timestamp() * 1000)
+
     result = {
         "date":          now.strftime("%Y-%m-%d"),
-        "hours":         [f"{h:02d}:00" for h in all_hours],
+        "start_ms":      int(start.timestamp() * 1000),
+        "end_ms":        int(now.replace(minute=0, second=0, microsecond=0).timestamp() * 1000),
+        "timestamps":    [hour_ts(h) for h in all_hours],
         "grid_consumed": [round(grid_from.get(h, 0.0), 3) for h in all_hours],
         "solar_used":    [round(max(0.0, solar.get(h, 0.0) - grid_to.get(h, 0.0)), 3) for h in all_hours],
         "grid_exported": [round(-grid_to.get(h, 0.0), 3) for h in all_hours],
