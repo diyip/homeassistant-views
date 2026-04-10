@@ -1,0 +1,14 @@
+# energy-usage-graph — HA shell_command + automation to refresh data every 5 min
+
+shell_command:
+  views_update_energy_usage_graph: "python3 /config/myapp/views/energy-usage-graph/update.py"
+
+automation:
+  - alias: "views: Refresh Energy Usage Graph data"
+    id: views_refresh_energy_usage_graph
+    trigger:
+      - platform: time_pattern
+        minutes: "/5"
+    action:
+      - service: shell_command.views_update_energy_usage_graph
+    mode: single

@@ -99,6 +99,16 @@ Open `http://<ha-host>/local/views/<name>/` — the card should show live data w
 
 ---
 
+## energy-usage-graph URL parameters
+
+Entities are derived automatically from HA's Energy configuration — no explicit entity config needed.
+
+| Parameter | Default | Description |
+|---|---|---|
+| `name` | _(none)_ | Page title shown above chart |
+
+---
+
 ## power-flow URL parameters
 
 All parameters are optional. Defaults match the HA Lovelace card config.
