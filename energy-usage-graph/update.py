@@ -88,9 +88,8 @@ def run():
 
     all_hours = sorted(set(grid_from) | set(grid_to) | set(solar))
 
-    # Midpoint timestamp for each hour (ms) — centers bars on the hour like HA does
     def hour_ts(h):
-        return int((start + timedelta(hours=h, minutes=30)).timestamp() * 1000)
+        return int((start + timedelta(hours=h)).timestamp() * 1000)
 
     end_of_today = start + timedelta(hours=23)  # HA: getSuggestedMax rounds endOfToday() down to 23:00
 
