@@ -3,7 +3,7 @@
 Standalone web pages that embed Home Assistant Lovelace custom cards.
 Each page polls live sensor data every 15 seconds without requiring a browser login — the HA token stays server-side.
 
-Accessible at: `http://<ha-host>/local/views/<name>/`
+Accessible at: `http://<ha-host>/local/views/<name>/index.html`
 Suitable for public monitor displays, iframe embeds, and wall panels.
 
 ---
@@ -74,7 +74,7 @@ Required for HA to load the shell_command and automation from the deployed packa
 
 ### 5. Verify
 
-Open `http://<ha-host>/local/views/<name>/` — the card should show live data within 15 seconds.
+Open `http://<ha-host>/local/views/<name>/index.html` — the card should show live data within 15 seconds.
 
 ---
 
@@ -94,8 +94,8 @@ Open `http://<ha-host>/local/views/<name>/` — the card should show live data w
 
 | View | URL | Custom component |
 |---|---|---|
-| power-flow | `/local/views/power-flow/` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
-| energy-usage-graph | `/local/views/energy-usage-graph/` | [apexcharts-card](https://github.com/RomRider/apexcharts-card) |
+| power-flow | `/local/views/power-flow/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
+| energy-usage-graph | `/local/views/energy-usage-graph/index.html` | [apexcharts-card](https://github.com/RomRider/apexcharts-card) |
 
 ---
 
@@ -132,7 +132,7 @@ All parameters are optional. Defaults match the HA Lovelace card config.
 
 Example:
 ```
-/local/views/power-flow/?name-house=Wit+House&name-fossil=Non+Fossil
+/local/views/power-flow/index.html?name-house=Wit+House&name-fossil=Non+Fossil
 ```
 
 ---
@@ -141,7 +141,7 @@ Example:
 
 ```yaml
 type: iframe
-url: http://<ha-host>/local/views/power-flow/
+url: http://<ha-host>/local/views/power-flow/index.html
 aspect_ratio: "75"
 ```
 

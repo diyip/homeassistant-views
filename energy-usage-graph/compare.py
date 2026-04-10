@@ -28,7 +28,7 @@ from PIL import Image, ImageChops, ImageDraw
 OUT          = Path(__file__).parent
 SESSION_FILE = OUT / "ha_session.json"
 
-STANDALONE_URL = "http://witw31.myqnapcloud.com:52581/local/views/energy-usage-graph/"
+STANDALONE_URL = "http://witw31.myqnapcloud.com:52581/local/views/energy-usage-graph/index.html"
 HA_URL         = "http://witw31.myqnapcloud.com:52581/energy"
 
 
