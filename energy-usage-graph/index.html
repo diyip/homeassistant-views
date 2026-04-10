@@ -20,6 +20,7 @@
     :root {
       --primary-background-color: #fafafa;
       --card-background-color: #ffffff;
+      --primary-text-color: #212121;
       --secondary-text-color: #727272;
       --divider-color: rgba(0,0,0,0.12);
       --energy-grid-consumption-color: #488fc2;
@@ -30,6 +31,7 @@
       :root {
         --primary-background-color: #111827;
         --card-background-color: #1f2937;
+        --primary-text-color: #e1e1e1;
         --secondary-text-color: #9b9b9b;
         --divider-color: rgba(225,225,225,0.12);
       }
@@ -66,6 +68,7 @@
   }
 
   const CSS          = getComputedStyle(document.documentElement);
+  const textColor    = CSS.getPropertyValue('--primary-text-color').trim();
   const subtextColor = CSS.getPropertyValue('--secondary-text-color').trim();
   const dividerColor = CSS.getPropertyValue('--divider-color').trim();
   const gridColor    = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
@@ -114,23 +117,20 @@
 
     return {
       backgroundColor: 'transparent',
-      textStyle: { fontFamily: 'Roboto, sans-serif', color: subtextColor },
-      grid: { top: 30, bottom: 0, left: 1, right: 1, containLabel: true },
+      textStyle: { fontFamily: 'Roboto, Noto, sans-serif', color: textColor },
+      grid: { top: 15, bottom: 0, left: 1, right: 1, containLabel: true },
       xAxis: {
         type: 'time',
         min: data.start_ms,
-        max: data.end_ms + 3600000,
+        max: data.end_ms,
         axisLabel: {
-          color: subtextColor,
+          color: textColor,
           fontSize: 12,
+          hideOverlap: true,
           formatter: (val) => {
             const d = new Date(val);
-            if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
-              return `{bold|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
-            }
             return `${String(d.getHours()).padStart(2, '0')}:00`;
           },
-          rich: { bold: { fontWeight: 'bold', color: subtextColor, fontSize: 12 } },
         },
         splitLine: { show: false },
         axisLine: { lineStyle: { color: dividerColor } },
@@ -140,9 +140,9 @@
         type: 'value',
         name: 'kWh',
         nameGap: 2,
-        nameTextStyle: { align: 'left', color: subtextColor, fontSize: 12 },
+        nameTextStyle: { align: 'left', color: textColor, fontSize: 12 },
         axisLabel: {
-          color: subtextColor,
+          color: textColor,
           fontSize: 12,
           formatter: (() => {
             let prev;
@@ -160,7 +160,7 @@
         trigger: 'axis',
         backgroundColor: dark ? '#1f2937' : '#ffffff',
         borderColor: dividerColor,
-        textStyle: { color: dark ? '#e1e1e1' : '#212121', fontSize: 12 },
+        textStyle: { color: textColor, fontSize: 12, fontFamily: 'Roboto, Noto, sans-serif' },
         formatter: (params) => {
           const ts = params[0]?.value[0];
           if (!ts) return '';
@@ -189,7 +189,7 @@
         stack:       'usage',
         barMaxWidth: 35,
         color:       s.fill,
-        itemStyle:   { borderColor: s.border, borderWidth: 0 },
+        itemStyle:   { borderColor: s.border, borderWidth: 1.5 },
         data:        s.data,
         emphasis:    { disabled: true },
       })),

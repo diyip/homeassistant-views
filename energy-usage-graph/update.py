@@ -92,10 +92,12 @@ def run():
     def hour_ts(h):
         return int((start + timedelta(hours=h, minutes=30)).timestamp() * 1000)
 
+    end_of_today = start + timedelta(days=1)  # midnight tomorrow = full 24h x-axis like HA
+
     result = {
         "date":          now.strftime("%Y-%m-%d"),
         "start_ms":      int(start.timestamp() * 1000),
-        "end_ms":        int(now.replace(minute=0, second=0, microsecond=0).timestamp() * 1000),
+        "end_ms":        int(end_of_today.timestamp() * 1000),
         "timestamps":    [hour_ts(h) for h in all_hours],
         "grid_consumed": [round(grid_from.get(h, 0.0), 3) for h in all_hours],
         "solar_used":    [round(max(0.0, solar.get(h, 0.0) - grid_to.get(h, 0.0)), 3) for h in all_hours],
