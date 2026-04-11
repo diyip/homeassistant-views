@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.compare import run
 
 STANDALONE_URL = "http://witw31.myqnapcloud.com:52581/local/views/energy-usage-graph/index.html"
-HA_URL         = "http://witw31.myqnapcloud.com:52581/energy"
+HA_URL         = "http://witw31.myqnapcloud.com:52581/lovelace-test/12"
 HA_SELECTOR    = "hui-energy-usage-graph-card"
 SESSION_FILE   = Path(__file__).parent / "ha_session.json"
 
