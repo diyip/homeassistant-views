@@ -26,6 +26,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/s
 │   ├── secrets.json              ← {"ha_token": "..."}  (not in git)
 │   └── views/
 │       ├── README.md
+│       ├── settings.json         ← {"ha_url": "...", "ha_views_compare_path": "..."}  (in git)
 │       ├── deploy.sh             ← run after adding or editing a view
 │       ├── .gitignore
 │       ├── lib/
@@ -114,11 +115,22 @@ aspect_ratio: "75"
 
 ## Visual comparison tool
 
+Captures screenshots of the standalone page and the reference HA card side by side,
+for both light and dark themes. Output goes to `~/tmp/views-compare/<name>/`.
+
+Instance config is read from `myapp/settings.json` (`ha_url`, `ha_views_compare_path`).
+One shared browser session is stored at `~/.config/ha-views/session.json` — save it
+once and all views share it.
+
 ```bash
 cd /config/myapp/views/<name>
 
-python3 compare.py --save-session   # first time — save HA browser session
-python3 compare.py                  # headless → standalone.png, ha.png, compare.png
+python3 compare.py --save-session   # once per HA instance — saves shared session
+python3 compare.py                  # → ~/tmp/views-compare/<name>/compare_light.png
+                                    #   ~/tmp/views-compare/<name>/compare_dark.png
 ```
+
+The reference HA cards live at the path set in `myapp/settings.json` under
+`ha_views_compare_path` (currently `lovelace-test/ha-views`).
 
 Requires: `pip install playwright pillow && playwright install chromium`

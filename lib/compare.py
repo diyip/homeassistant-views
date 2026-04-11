@@ -7,32 +7,44 @@ Purpose:
     then produce a side-by-side comparison image with a pixel diff column.
 
 Responsibilities:
+    - Load instance config (ha_url, ha_views_compare_path) from myapp/settings.json
     - Launch headless Chromium to screenshot both the standalone and HA pages
     - Crop screenshots to the target card element
     - Compose a labelled side-by-side comparison with pixel diff
-    - Save and restore the HA browser session to avoid repeated logins
+    - Save and restore one shared HA browser session (~/.config/ha-views/session.json)
     - Expose a single run() entry point consumed by each view's compare.py
 
 Key assumptions:
     - playwright and pillow must be installed locally (not in the HA container)
     - Standalone pages are accessible without authentication
     - HA pages require a saved browser session (run --save-session once to create it)
+    - myapp/settings.json must contain ha_url and ha_views_compare_path
 """
 
 from __future__ import annotations
 
 import argparse
 import io
+import json
 import sys
 from pathlib import Path
 
 from playwright.sync_api import Page, sync_playwright
 from PIL import Image, ImageChops, ImageDraw
 
+_SETTINGS_FILE   = Path(__file__).resolve().parent.parent / "settings.json"
+_SESSION_FILE    = Path.home() / ".config" / "ha-views" / "session.json"
+_OUT_BASE        = Path.home() / "tmp" / "views-compare"
+
 _VIEWPORT        = {"width": 1280, "height": 800}
 _WAIT_TIMEOUT_MS = 25_000
 _LOAD_TIMEOUT_MS = 40_000
 _SETTLE_MS       = 3_000
+
+
+def _load_settings() -> dict:
+    with open(_SETTINGS_FILE) as f:
+        return json.load(f)
 
 
 def _wait_for_card(page: Page, selector: str) -> None:
@@ -86,18 +98,19 @@ def _make_comparison(img_a: Image.Image, img_b: Image.Image,
     return canvas
 
 
-def _save_session(pw, ha_url: str, session_file: Path) -> None:
+def _save_session(pw, ha_url: str) -> None:
+    _SESSION_FILE.parent.mkdir(parents=True, exist_ok=True)
     print("Opening browser — log in to HA, wait for the dashboard, then press ENTER here.")
     browser = pw.chromium.launch(headless=False, args=["--start-maximized"])
     ctx  = browser.new_context(viewport=None, no_viewport=True)
     ctx.new_page().goto(ha_url)
     input("\n>>> Dashboard loaded? Press ENTER to save session and close browser: ")
-    ctx.storage_state(path=str(session_file))
-    print(f"Session saved to {session_file}")
+    ctx.storage_state(path=str(_SESSION_FILE))
+    print(f"Session saved to {_SESSION_FILE}")
     browser.close()
 
 
-def _take_screenshots(pw, standalone_url: str, ha_url: str, session_file: Path,
+def _take_screenshots(pw, standalone_url: str, ha_url: str,
                       standalone_selector: str | None,
                       ha_selector: str,
                       color_scheme: str) -> tuple[bytes, bytes]:
@@ -113,14 +126,14 @@ def _take_screenshots(pw, standalone_url: str, ha_url: str, session_file: Path,
     ctx1.close()
 
     print(f"Loading HA page ({color_scheme}) …")
-    ctx2  = browser.new_context(viewport=_VIEWPORT, storage_state=str(session_file),
+    ctx2  = browser.new_context(viewport=_VIEWPORT, storage_state=str(_SESSION_FILE),
                                 color_scheme=color_scheme)
     page2 = ctx2.new_page()
     page2.on("console", lambda m: print(f"  [browser] {m.text}") if m.type == "error" else None)
     page2.goto(ha_url, wait_until="networkidle", timeout=_LOAD_TIMEOUT_MS)
     _wait_for_card(page2, ha_selector)
     shot_ha = _crop_card(page2, ha_selector)
-    ctx2.storage_state(path=str(session_file))
+    ctx2.storage_state(path=str(_SESSION_FILE))
     print("  done")
     ctx2.close()
 
@@ -130,46 +143,53 @@ def _take_screenshots(pw, standalone_url: str, ha_url: str, session_file: Path,
 
 def run(
     *,
-    standalone_url: str,
-    ha_url: str,
-    session_file: Path,
+    standalone_path: str,
     ha_selector: str,
     ha_label: str = "HA",
     standalone_selector: str | None = None,
-    out_dir: Path | None = None,
 ) -> None:
     """Entry point for view-specific compare scripts.
 
+    Instance config (ha_url, ha_views_compare_path) is read from myapp/settings.json.
+    The shared session file lives at ~/.config/ha-views/session.json.
+    Output images go to ~/tmp/views-compare/<view-name>/.
+
     Args:
-        standalone_url:      URL of the standalone view (no auth required)
-        ha_url:              URL of the HA page containing the reference card
-        session_file:        Path to the saved Playwright browser session file
+        standalone_path:     Path portion of the standalone URL, e.g.
+                             "/local/views/energy-usage-graph/index.html"
         ha_selector:         CSS selector for the HA card element to crop
         ha_label:            Label for the HA screenshot in the comparison image
         standalone_selector: CSS selector to crop on the standalone page;
                              None captures the full viewport
-        out_dir:             Directory for output images; defaults to session_file.parent
     """
-    if out_dir is None:
-        out_dir = session_file.parent
+    settings        = _load_settings()
+    ha_base         = settings["ha_url"].rstrip("/")
+    standalone_url  = f"{ha_base}{standalone_path}"
+    ha_url          = f"{ha_base}/{settings['ha_views_compare_path']}"
+
+    # Derive view name from path: "/local/views/energy-usage-graph/index.html" → "energy-usage-graph"
+    view_name = Path(standalone_path).parent.name
+    out_dir   = _OUT_BASE / view_name
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--save-session", action="store_true",
-                    help="Open browser, log in to HA, and save session for headless use")
+                    help="Open browser, log in to HA, and save the shared session file")
     args = ap.parse_args()
 
     with sync_playwright() as pw:
         if args.save_session:
-            _save_session(pw, ha_url, session_file)
+            _save_session(pw, ha_url)
             return
 
-        if not session_file.exists():
-            print("No session file found. Run:  python3 compare.py --save-session")
+        if not _SESSION_FILE.exists():
+            print(f"No session file found at {_SESSION_FILE}")
+            print("Run from any view:  python3 compare.py --save-session")
             sys.exit(1)
 
         for scheme in ("light", "dark"):
             shot_s, shot_ha = _take_screenshots(
-                pw, standalone_url, ha_url, session_file,
+                pw, standalone_url, ha_url,
                 standalone_selector, ha_selector, scheme,
             )
 

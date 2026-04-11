@@ -159,9 +159,12 @@ to re-initialise ECharts with the correct dark/light palette.
 ```bash
 cd /config/myapp/views/energy-usage-graph
 
-python3 compare.py --save-session   # first time only
-python3 compare.py                  # → standalone.png, ha.png, compare.png
+python3 compare.py --save-session   # once per HA instance — saves shared session
+python3 compare.py                  # → ~/tmp/views-compare/energy-usage-graph/compare_light.png
+                                    #   ~/tmp/views-compare/energy-usage-graph/compare_dark.png
 ```
 
-`HA_URL` points to the lovelace dashboard containing the reference
-`hui-energy-usage-graph-card`. Update `compare.py` if the dashboard URL changes.
+Instance config (`ha_url`, `ha_views_compare_path`) is read from `myapp/settings.json`.
+The shared session lives at `~/.config/ha-views/session.json` — one session for all views.
+The reference `hui-energy-usage-graph-card` must be present on the dashboard at
+`ha_views_compare_path` (currently `lovelace-test/ha-views`).

@@ -189,9 +189,12 @@ this when updating the component to force browsers to reload it.
 ```bash
 cd /config/myapp/views/power-flow-card-plus
 
-python3 compare.py --save-session   # first time only
-python3 compare.py                  # → standalone.png, ha.png, compare.png
+python3 compare.py --save-session   # once per HA instance — saves shared session
+python3 compare.py                  # → ~/tmp/views-compare/power-flow-card-plus/compare_light.png
+                                    #   ~/tmp/views-compare/power-flow-card-plus/compare_dark.png
 ```
 
-`HA_URL` points to the lovelace dashboard containing the reference
-`power-flow-card-plus` card. Update `compare.py` if the dashboard URL changes.
+Instance config (`ha_url`, `ha_views_compare_path`) is read from `myapp/settings.json`.
+The shared session lives at `~/.config/ha-views/session.json` — one session for all views.
+The reference `power-flow-card-plus` card must be present on the dashboard at
+`ha_views_compare_path` (currently `lovelace-test/ha-views`).
