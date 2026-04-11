@@ -23,7 +23,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/s
 ```
 /config/
 ├── myapp/
-│   ├── secrets.json              ← {"token": "..."}  (not in git)
+│   ├── secrets.json              ← {"ha_token": "..."}  (not in git)
 │   └── views/
 │       ├── README.md
 │       ├── deploy.sh             ← run after adding or editing a view
@@ -95,7 +95,7 @@ Open `http://<ha-host>/local/views/<name>/index.html` — the card should show l
 
 | View | Refresh | URL | Notes |
 |---|---|---|---|
-| power-flow-card-plus | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus-card-plus](https://github.com/flixlix/power-flow-card-plus-card-plus) |
+| power-flow-card-plus | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
 | energy-usage-graph | 5 min | `/local/views/energy-usage-graph/index.html` | ECharts bar chart, entities from HA energy config |
 
 ---
