@@ -1,7 +1,7 @@
 # views
 
 Standalone web pages that embed Home Assistant Lovelace custom cards.
-Each page polls live sensor data every 15 seconds without requiring a browser login — the HA token stays server-side.
+Each page polls live sensor data without requiring a browser login — the HA token stays server-side.
 
 Accessible at: `http://<ha-host>/local/views/<name>/index.html`
 Suitable for public monitor displays, iframe embeds, and wall panels.
@@ -13,9 +13,7 @@ Suitable for public monitor displays, iframe embeds, and wall panels.
 ```
 Browser  ──fetch──▶  /local/views/<name>/data.json   (no auth)
                               ▲
-HA automation (every 15 s)  ──writes──  update.py
-                              ▲
-                    /config/myapp/secrets.json        (token, never exposed)
+HA automation  ──writes──  update.py  ──reads──  /config/myapp/secrets.json
 ```
 
 ---
@@ -30,6 +28,9 @@ HA automation (every 15 s)  ──writes──  update.py
 │       ├── README.md
 │       ├── deploy.sh             ← run after adding or editing a view
 │       ├── .gitignore
+│       ├── lib/
+│       │   ├── ha.py             ← shared HA client utilities (update scripts)
+│       │   └── compare.py        ← shared Playwright utilities (compare scripts)
 │       └── <name>/
 │           ├── index.html        ← standalone page source
 │           ├── update.py         ← fetches entities → writes data.json
@@ -74,17 +75,17 @@ Required for HA to load the shell_command and automation from the deployed packa
 
 ### 5. Verify
 
-Open `http://<ha-host>/local/views/<name>/index.html` — the card should show live data within 15 seconds.
+Open `http://<ha-host>/local/views/<name>/index.html` — the card should show live data within one refresh interval.
 
 ---
 
 ## Adding a new view
 
 1. Create `<name>/` with four files (copy from an existing view and edit):
-   - `index.html` — update `STANDALONE_URL` and entity sensor IDs
-   - `update.py` — update `ENTITIES` list and `OUTPUT_FILE` path
-   - `card.yaml` — update shell_command name, automation alias/id, and script path
-   - `compare.py` — update `STANDALONE_URL` and `HA_URL`
+   - `index.html` — update entity sensor IDs and chart config
+   - `update.py` — update `ENTITIES` / fetch logic and `OUTPUT_FILE` path
+   - `card.yaml` — update shell_command name, automation alias/id, script path, and trigger interval
+   - `compare.py` — update `STANDALONE_URL`, `HA_URL`, and `HA_SELECTOR`
 
 2. Run `deploy.sh` and restart HA.
 
@@ -92,10 +93,10 @@ Open `http://<ha-host>/local/views/<name>/index.html` — the card should show l
 
 ## Views
 
-| View | URL | Custom component |
-|---|---|---|
-| power-flow | `/local/views/power-flow/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
-| energy-usage-graph | `/local/views/energy-usage-graph/index.html` | [apexcharts-card](https://github.com/RomRider/apexcharts-card) |
+| View | Refresh | URL | Notes |
+|---|---|---|---|
+| power-flow | 15 s | `/local/views/power-flow/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
+| energy-usage-graph | 5 min | `/local/views/energy-usage-graph/index.html` | ECharts bar chart, entities from HA energy config |
 
 ---
 
@@ -110,8 +111,6 @@ Entities are derived automatically from HA's Energy configuration — no explici
 ---
 
 ## power-flow URL parameters
-
-All parameters are optional. Defaults match the HA Lovelace card config.
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -130,11 +129,6 @@ All parameters are optional. Defaults match the HA Lovelace card config.
 | `color_icon` | true | Color icons by flow direction |
 | `clickable_entities` | true | Enable click on circles |
 
-Example:
-```
-/local/views/power-flow/index.html?name-house=Wit+House&name-fossil=Non+Fossil
-```
-
 ---
 
 ## Lovelace iframe card
@@ -150,7 +144,7 @@ aspect_ratio: "75"
 ## Visual comparison tool
 
 ```bash
-cd /config/myapp/views/power-flow
+cd /config/myapp/views/power-flow   # or energy-usage-graph
 
 # First time — save HA browser session
 python3 compare.py --save-session

@@ -1,11 +1,11 @@
 <!--
-  energy-usage-graph — standalone view, today's hourly energy usage
-  Source : /config/myapp/views/energy-usage-graph/index.html
-  Served : /local/views/energy-usage-graph/index.html
-  Data   : /local/views/energy-usage-graph/data.json  (written by update.py every 5 min)
+  energy-usage-graph — today's hourly energy usage chart
 
-  URL parameters (all optional):
-    name=Page+Title      Page title shown above chart
+  Served at: /local/views/energy-usage-graph/index.html
+  Data from: /local/views/energy-usage-graph/data.json  (refreshed every 5 min by update.py)
+
+  URL parameters:
+    name=Page+Title   optional page title shown above chart
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +74,6 @@
   const gridColor    = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
   const solarColor   = CSS.getPropertyValue('--energy-solar-color').trim();
   const exportColor  = CSS.getPropertyValue('--energy-grid-return-color').trim();
-  // HA uses 50% alpha fill + full-opacity border (getEnergyColor appends "7F")
   const gridFill   = gridColor   + '7F';
   const solarFill  = solarColor  + '7F';
   const exportFill = exportColor + '7F';
@@ -215,7 +214,9 @@
       document.getElementById('chart-date').textContent = data.date || '';
 
       chart.setOption(buildOption(data), { notMerge: true });
-    } catch (e) {}
+    } catch (e) {
+      console.error('refresh failed:', e);
+    }
   }
 
   window.addEventListener('resize', () => chart.resize());

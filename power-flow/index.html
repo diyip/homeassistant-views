@@ -1,18 +1,17 @@
 <!--
-  power-flow — standalone view for power-flow-card-plus
-  Source : /config/myapp/views/power-flow/index.html
-  Served : /local/views/power-flow/
-  Data   : /local/views/power-flow/data.json  (written by update.py every 15 s)
+  power-flow — real-time power flow card
+
+  Served at: /local/views/power-flow/index.html
+  Data from: /local/views/power-flow/data.json  (refreshed every 15 s by update.py)
 
   URL parameters (all optional):
-    name-grid=Grid            name-solar=Solar
-    name-house=Wit+House      name-fossil=Non+Fossil
     name=Page+Title
-    w_decimals=0              kw_decimals=1
-    min_flow_rate=0.5         max_flow_rate=7
+    name-grid=Grid        name-solar=Solar
+    name-house=Wit+House  name-fossil=Non+Fossil
+    w_decimals=0          kw_decimals=1
+    min_flow_rate=0.5     max_flow_rate=7
     max_expected_power=5000   min_expected_power=0.01
-    watt_threshold=1000       color_icon=true
-    clickable_entities=true
+    watt_threshold=1000   color_icon=true   clickable_entities=true
 -->
 <!DOCTYPE html>
 <html lang="th">
@@ -202,7 +201,9 @@
         callService: () => Promise.resolve(),
         callApi:     () => Promise.resolve()
       };
-    } catch (e) {}
+    } catch (e) {
+      console.error('refresh failed:', e);
+    }
   }
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);

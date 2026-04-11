@@ -3,3 +3,4 @@
 */ha_session.json
 */tmp/
 */*.png
+__pycache__/

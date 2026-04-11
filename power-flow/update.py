@@ -1,39 +1,55 @@
 #!/usr/bin/env python3
-# power-flow — fetch entity states from HA and write to www/views/power-flow/data.json
-# Token is read from /config/myapp/secrets.json — never exposed to the browser.
-# Called by HA shell_command every 15 seconds.
+"""
+power-flow view updater.
 
-import json
-import urllib.request
+Purpose:
+    Fetch the current state of power-flow entities from HA and write data.json
+    for the card view to consume.
 
-SECRETS_FILE = "/config/myapp/secrets.json"
-OUTPUT_FILE  = "/config/www/views/power-flow/data.json"
-HA_URL       = "http://localhost:8123"
+Responsibilities:
+    - Fetch configured entity states from the HA REST API
+    - Write the state objects as JSON for browser polling
 
-ENTITIES = [
+Key assumptions:
+    - Entity IDs must match those configured in index.html
+    - Called by HA shell_command every 15 seconds
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from lib.ha import configure_logging, error_output, load_token, rest_get, write_json
+
+OUTPUT_FILE = "/config/www/views/power-flow/data.json"
+
+ENTITIES = frozenset({
     "sensor.wit_grid_w",
     "sensor.wit_solar_w",
     "sensor.wit_house_kw",
     "sensor.electricity_maps_grid_fossil_fuel_percentage",
-]
+})
 
-try:
-    with open(SECRETS_FILE) as f:
-        token = json.load(f)["token"]
+log = configure_logging("power-flow.update")
 
-    req = urllib.request.Request(
-        f"{HA_URL}/api/states",
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    states = json.loads(urllib.request.urlopen(req, timeout=5).read())
+
+def main() -> None:
+    token  = load_token()
+    states = rest_get("/api/states", token)
     result = {s["entity_id"]: s for s in states if s["entity_id"] in ENTITIES}
 
-    with open(OUTPUT_FILE, "w") as f:
-        json.dump(result, f)
+    missing = ENTITIES - result.keys()
+    if missing:
+        log.warning("Missing entities: %s", sorted(missing))
 
-except Exception as e:
+    write_json(OUTPUT_FILE, result)
+    log.info("Wrote %s with %d entities", OUTPUT_FILE, len(result))
+
+
+if __name__ == "__main__":
     try:
-        with open(OUTPUT_FILE, "w") as f:
-            json.dump({"_error": str(e)}, f)
-    except Exception:
-        pass
+        main()
+    except Exception as exc:
+        error_output(OUTPUT_FILE, exc, log)

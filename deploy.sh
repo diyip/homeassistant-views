@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-# Deploy all views — run inside the HA docker container:
+#
+# Deploy all views to www/ and packages/.
+# Run inside the HA Docker container:
 #   bash /config/myapp/views/deploy.sh
-# Copies index.html → www/views/<name>/ and card.yaml → packages/views_<name>.yaml
-# Restart HA after running to load package changes. Never touches data.json or secrets.json.
+#
+# For each view directory containing index.html:
+#   - Copies index.html  → /config/www/views/<name>/index.html
+#   - Copies card.yaml   → /config/packages/views_<name>.yaml
+# Restart HA after running to load package changes.
+# Never touches data.json, secrets.json, or lib/.
 
 set -euo pipefail
 
@@ -13,6 +19,7 @@ PACKAGES="/config/packages"
 WWW_OWNER=$(stat -c '%U:%G' "$VIEWS_WWW" 2>/dev/null || echo "")
 
 for view_dir in "$VIEWS_SRC"/*/; do
+    [[ ! -f "$view_dir/index.html" ]] && continue
     name=$(basename "$view_dir")
     mkdir -p "$VIEWS_WWW/$name"
     cp "$view_dir/index.html" "$VIEWS_WWW/$name/index.html"
@@ -21,4 +28,4 @@ for view_dir in "$VIEWS_SRC"/*/; do
     echo "deployed: $name"
 done
 
-echo "done. Restart HA for package changes to take effect."
+echo "Done. Restart HA for package changes to take effect."
