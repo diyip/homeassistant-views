@@ -80,39 +80,39 @@
 
   const chart = echarts.init(document.getElementById('chart'), dark ? 'dark' : null, { renderer: 'canvas' });
 
-  // Apply rounded caps: top of highest positive bar, bottom of lowest negative bar
-  function applyRoundedCaps(seriesList) {
-    const n = seriesList[0]?.data.length ?? 0;
-    for (let i = 0; i < n; i++) {
-      for (let s = seriesList.length - 1; s >= 0; s--) {
-        const v = seriesList[s].data[i][1];
-        if (v > 0) {
-          seriesList[s].data[i] = { value: seriesList[s].data[i], itemStyle: { borderRadius: [4, 4, 0, 0] } };
-          break;
-        }
-      }
-      for (let s = seriesList.length - 1; s >= 0; s--) {
-        const v = seriesList[s].data[i][1];
-        if (v < 0) {
-          seriesList[s].data[i] = { value: seriesList[s].data[i], itemStyle: { borderRadius: [0, 0, 4, 4] } };
-          break;
-        }
-      }
-    }
-  }
-
   function buildOption(data) {
-    const ts   = data.timestamps;
-    const solar = ts.map((t, i) => [t, data.solar_used[i]]);
-    const grid  = ts.map((t, i) => [t, data.grid_consumed[i]]);
-    const exp   = ts.map((t, i) => [t, data.grid_exported[i]]);
+    const ts = data.timestamps;
+    const R  = 4;   // corner radius (px)
 
-    const seriesList = [
-      { name: 'Solar used',    data: solar, fill: solarFill,  border: solarColor  },
-      { name: 'Grid consumed', data: grid,  fill: gridFill,   border: gridColor   },
-      { name: 'Grid exported', data: exp,   fill: exportFill, border: exportColor },
-    ];
-    applyRoundedCaps(seriesList);
+    // Floating bars: [timestamp, y_start, y_end]
+    // Overlay via barGap:'-100%' to visually stack without using ECharts stack,
+    // which silently ignores borderRadius on stacked series.
+    const solarData = ts.map((t, i) => {
+      const v    = data.solar_used[i];
+      const item = [t, 0, v];
+      // Round top only when solar is the topmost positive bar
+      return (v > 0 && data.grid_consumed[i] === 0)
+        ? { value: item, itemStyle: { borderRadius: [R, R, 0, 0] } }
+        : item;
+    });
+
+    const gridData = ts.map((t, i) => {
+      const base = data.solar_used[i];
+      const v    = data.grid_consumed[i];
+      const item = [t, base, base + v];
+      // Grid consumed is always the topmost positive bar when non-zero
+      return v > 0
+        ? { value: item, itemStyle: { borderRadius: [R, R, 0, 0] } }
+        : item;
+    });
+
+    const expData = ts.map((t, i) => {
+      const v    = data.grid_exported[i];   // negative
+      const item = [t, v, 0];
+      return v < 0
+        ? { value: item, itemStyle: { borderRadius: [0, 0, R, R] } }
+        : item;
+    });
 
     return {
       backgroundColor: 'transparent',
@@ -167,18 +167,19 @@
         formatter: (params) => {
           const ts = params[0]?.value[0];
           if (!ts) return '';
-          const d   = new Date(ts - 30 * 60 * 1000);
-          const end = new Date(d.getTime() + 3600000);
+          const d   = new Date(ts);
+          const end = new Date(ts + 3600000);
           const fmt = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
           let html = `<div style="font-weight:500;margin-bottom:4px">${fmt(d)} – ${fmt(end)}</div>`;
           let sumPositive = 0, countPositive = 0;
           params.forEach(p => {
-            const v = p.value[1];
+            const yStart = p.value[1], yEnd = p.value[2];
+            const v = yEnd - yStart;            // bar height (always positive)
             if (v === 0) return;
-            const disp = Math.abs(v);
-            const fmt  = disp < 0.1 ? disp.toFixed(3) : disp.toFixed(2);
-            html += `<div>${p.marker} ${p.seriesName}: <span style="direction:ltr;display:inline">${fmt} kWh</span></div>`;
-            if (v > 0) { sumPositive += v; countPositive++; }
+            const isExport = yStart < 0;
+            const disp = v < 0.1 ? v.toFixed(3) : v.toFixed(2);
+            html += `<div>${p.marker} ${p.seriesName}: <span style="direction:ltr;display:inline">${disp} kWh</span></div>`;
+            if (!isExport) { sumPositive += v; countPositive++; }
           });
           if (countPositive > 1) {
             html += `<br><b>Total consumed: ${sumPositive.toFixed(2)} kWh</b>`;
@@ -186,17 +187,26 @@
           return html;
         },
       },
-      series: seriesList.map(s => ({
-        name:            s.name,
-        type:            'bar',
-        stack:           'usage',
-        barMaxWidth:     50,
-        barCategoryGap:  '15%',
-        color:           s.fill,
-        itemStyle:       { borderColor: s.border, borderWidth: 0 },
-        data:            s.data,
-        emphasis:        { disabled: true },
-      })),
+      series: [
+        {
+          name: 'Solar used',
+          type: 'bar', barMaxWidth: 50, barCategoryGap: '15%',
+          color: solarFill, itemStyle: { borderWidth: 0 },
+          data: solarData, emphasis: { disabled: true },
+        },
+        {
+          name: 'Grid consumed',
+          type: 'bar', barMaxWidth: 50, barGap: '-100%',
+          color: gridFill, itemStyle: { borderWidth: 0 },
+          data: gridData, emphasis: { disabled: true },
+        },
+        {
+          name: 'Grid exported',
+          type: 'bar', barMaxWidth: 50, barGap: '-100%',
+          color: exportFill, itemStyle: { borderWidth: 0 },
+          data: expData, emphasis: { disabled: true },
+        },
+      ],
     };
   }
 
