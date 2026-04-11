@@ -45,7 +45,7 @@ def configure_logging(name: str) -> logging.Logger:
 
 def load_token(path: str = SECRETS_FILE) -> str:
     with open(path) as f:
-        return json.load(f)["token"]
+        return json.load(f)["ha_token"]
 
 
 def rest_get(path: str, token: str, timeout: int = 5):

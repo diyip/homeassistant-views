@@ -54,7 +54,7 @@ HA → Profile → Long-Lived Access Tokens → Create token.
 
 Save to `/config/myapp/secrets.json`:
 ```json
-{"token": "your-token-here"}
+{"ha_token": "your-token-here"}
 ```
 
 ### 2. Copy this folder
