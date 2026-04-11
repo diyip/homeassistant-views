@@ -94,25 +94,18 @@ After the card's first render, a `CSSStyleSheet` is injected into
 
 ---
 
-## Entities
+## Entities and card config
 
-Defined in two places that must stay in sync:
+All entity IDs and card parameters are configured in **`settings.json`** under the
+`power_flow_card_plus` key — nothing is hardcoded in `update.py` or `index.html`.
 
-| File | Location |
-|---|---|
-| `update.py` | `ENTITIES` frozenset |
-| `index.html` | `card.setConfig({ entities: { ... } })` |
+`update.py` reads entity IDs from `settings.json`, fetches their states, and writes
+`data.json` with both the state objects and a `_config` key containing the full card
+config. `index.html` reads `_config` from `data.json` at load time and passes it
+directly to `card.setConfig()`.
 
-Current entities:
-
-| Role | Entity ID |
-|---|---|
-| Grid | `sensor.wit_grid_w` |
-| Solar | `sensor.wit_solar_w` |
-| Home | `sensor.wit_house_kw` |
-| Non-fossil % | `sensor.electricity_maps_grid_fossil_fuel_percentage` |
-
-To change entities, update both files and redeploy.
+To change entities or card parameters, edit `settings.json` and wait for the next
+`update.py` run (≤ 15 s) — no redeploy needed.
 
 ---
 
@@ -120,20 +113,25 @@ To change entities, update both files and redeploy.
 
 Written to `/config/www/views/power-flow-card-plus/data.json`.
 
-The file contains a flat map of `entity_id → HA state object`:
+The file contains the card config plus a flat map of `entity_id → HA state object`:
 
 ```json
 {
-  "sensor.wit_grid_w": {
-    "entity_id": "sensor.wit_grid_w",
+  "_config": { "entities": { "grid": { "entity": "sensor.xxx", ... }, ... }, ... },
+  "sensor.xxx": {
+    "entity_id": "sensor.xxx",
     "state": "1234",
-    "attributes": { "unit_of_measurement": "W", "friendly_name": "Grid", ... },
+    "attributes": { "unit_of_measurement": "kW", "friendly_name": "Grid", ... },
     "last_changed": "2026-04-11T09:00:00+00:00",
     "last_updated": "2026-04-11T09:00:00+00:00"
   },
   ...
 }
 ```
+
+`_config` is the `power_flow_card_plus` block from `settings.json`, embedded by
+`update.py` so `index.html` can call `card.setConfig()` without reading the file
+directly (which is not served under `/local/`).
 
 On error: `{"_error": "message"}` — refresh is silently skipped, last
 valid state remains displayed.
@@ -142,24 +140,26 @@ valid state remains displayed.
 
 ## URL parameters
 
-All parameters are optional. Defaults match the installed HA Lovelace card config.
+All parameters are optional. Numeric and boolean values override the corresponding
+fields in `settings.json`; entity name overrides apply to the matching entity's
+`name` field. Defaults are whatever is set in `settings.json`.
 
-| Parameter | Default | Description |
+| Parameter | Overrides | Description |
 |---|---|---|
-| `name` | _(none)_ | Page title shown above card; also sets `document.title` |
-| `name-grid` | Grid | Grid circle label |
-| `name-solar` | Solar | Solar circle label |
-| `name-house` | Wit House | House circle label |
-| `name-fossil` | Non Fossil | Non-fossil circle label |
-| `w_decimals` | 0 | Decimal places when displaying watts |
-| `kw_decimals` | 1 | Decimal places when displaying kilowatts |
-| `min_flow_rate` | 0.5 | Minimum animation flow rate |
-| `max_flow_rate` | 7 | Maximum animation flow rate |
-| `max_expected_power` | 5000 | Max power (W) used for flow speed scaling |
-| `min_expected_power` | 0.01 | Min power (W) used for flow speed scaling |
-| `watt_threshold` | 1000 | W value above which kW display is used |
-| `color_icon` | true | Color circle icons by flow direction |
-| `clickable_entities` | true | Enable tap/click on circles |
+| `name` | _(page title only)_ | Page title shown above card; also sets `document.title` |
+| `name-grid` | `entities.grid.name` | Grid circle label |
+| `name-solar` | `entities.solar.name` | Solar circle label |
+| `name-house` | `entities.home.name` | House circle label |
+| `name-fossil` | `entities.fossil_fuel_percentage.name` | Non-fossil circle label |
+| `w_decimals` | `w_decimals` | Decimal places when displaying watts |
+| `kw_decimals` | `kw_decimals` | Decimal places when displaying kilowatts |
+| `min_flow_rate` | `min_flow_rate` | Minimum animation flow rate |
+| `max_flow_rate` | `max_flow_rate` | Maximum animation flow rate |
+| `max_expected_power` | `max_expected_power` | Max power (W) for flow speed scaling |
+| `min_expected_power` | `min_expected_power` | Min power (W) for flow speed scaling |
+| `watt_threshold` | `watt_threshold` | W value above which kW display is used |
+| `color_icon` | `color_icon` | Color circle icons by flow direction |
+| `clickable_entities` | `clickable_entities` | Enable tap/click on circles |
 
 ---
 
@@ -194,7 +194,7 @@ python3 compare.py                  # → ~/tmp/views-compare/power-flow-card-pl
                                     #   ~/tmp/views-compare/power-flow-card-plus/compare_dark.png
 ```
 
-Instance config (`ha_url`, `ha_views_compare_path`) is read from `myapp/settings.json`.
+Instance config (`ha_url`, `ha_views_compare_path`) is read from `settings.json`.
 The shared session lives at `~/.config/ha-views/session.json` — one session for all views.
 The reference `power-flow-card-plus` card must be present on the dashboard at
-`ha_views_compare_path` (currently `lovelace-test/ha-views`).
+the path set in `settings.json` under `ha_views_compare_path`.

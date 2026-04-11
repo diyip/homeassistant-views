@@ -164,7 +164,7 @@ python3 compare.py                  # → ~/tmp/views-compare/energy-usage-graph
                                     #   ~/tmp/views-compare/energy-usage-graph/compare_dark.png
 ```
 
-Instance config (`ha_url`, `ha_views_compare_path`) is read from `myapp/settings.json`.
+Instance config (`ha_url`, `ha_views_compare_path`) is read from `settings.json`.
 The shared session lives at `~/.config/ha-views/session.json` — one session for all views.
 The reference `hui-energy-usage-graph-card` must be present on the dashboard at
-`ha_views_compare_path` (currently `lovelace-test/ha-views`).
+the path set in `settings.json` under `ha_views_compare_path`.
