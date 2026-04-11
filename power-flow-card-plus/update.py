@@ -7,45 +7,63 @@ Purpose:
     data.json for the card view to consume.
 
 Responsibilities:
+    - Read card config and entity IDs from settings.json
     - Fetch configured entity states from the HA REST API
-    - Write the state objects as JSON for browser polling
+    - Write entity states and card config as JSON for browser polling
 
 Key assumptions:
-    - Entity IDs must match those configured in index.html
+    - Entity IDs and card parameters are configured in settings.json
     - Called by HA shell_command every 15 seconds
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.ha import configure_logging, error_output, load_token, rest_get, write_json
 
-OUTPUT_FILE = "/config/www/views/power-flow-card-plus/data.json"
-
-ENTITIES = frozenset({
-    "sensor.wit_grid_w",
-    "sensor.wit_solar_w",
-    "sensor.wit_house_kw",
-    "sensor.electricity_maps_grid_fossil_fuel_percentage",
-})
+OUTPUT_FILE   = "/config/www/views/power-flow-card-plus/data.json"
+SETTINGS_FILE = "/config/myapp/views/settings.json"
 
 log = configure_logging("power-flow-card-plus.update")
 
 
+def load_card_config() -> dict:
+    with open(SETTINGS_FILE) as f:
+        return json.load(f)["power_flow_card_plus"]
+
+
+def extract_entity_ids(cfg: dict) -> frozenset[str]:
+    """Collect all entity IDs referenced in the card config entities block."""
+    ids: set[str] = set()
+    for key, val in cfg.get("entities", {}).items():
+        if key == "individual":
+            for item in (val if isinstance(val, list) else [val]):
+                if isinstance(item, dict) and item.get("entity"):
+                    ids.add(item["entity"])
+        elif isinstance(val, dict) and val.get("entity"):
+            ids.add(val["entity"])
+    return frozenset(ids)
+
+
 def main() -> None:
+    cfg        = load_card_config()
+    entity_ids = extract_entity_ids(cfg)
+
     token  = load_token()
     states = rest_get("/api/states", token)
-    result = {s["entity_id"]: s for s in states if s["entity_id"] in ENTITIES}
+    result = {s["entity_id"]: s for s in states if s["entity_id"] in entity_ids}
 
-    missing = ENTITIES - result.keys()
+    missing = entity_ids - result.keys()
     if missing:
         log.warning("Missing entities: %s", sorted(missing))
 
+    result["_config"] = cfg
     write_json(OUTPUT_FILE, result)
-    log.info("Wrote %s with %d entities", OUTPUT_FILE, len(result))
+    log.info("Wrote %s with %d entities", OUTPUT_FILE, len(result) - 1)
 
 
 if __name__ == "__main__":

@@ -126,37 +126,28 @@
   await customElements.whenDefined('power-flow-card-plus');
 
   const card = document.createElement('power-flow-card-plus');
-  const p = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
-  const num  = (key, def) => { const v = p.get(key); return v !== null ? Number(v) : def; };
-  const bool = (key, def) => { const v = p.get(key); return v !== null ? v !== 'false' : def; };
-  const colorIcon = bool('color_icon', true);
+  const p    = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
 
-  card.setConfig({
-    type: "custom:power-flow-card-plus",
-    entities: {
-      grid:  { entity: "sensor.wit_grid_w",
-               name: p.get('name-grid')   || "Grid",       color_icon: colorIcon },
-      solar: { entity: "sensor.wit_solar_w", display_zero_state: null,
-               name: p.get('name-solar')  || "Solar",      color_icon: colorIcon },
-      home:  { entity: "sensor.wit_house_kw",
-               name: p.get('name-house')  || "Wit House",  color_icon: colorIcon },
-      fossil_fuel_percentage: { entity: "sensor.electricity_maps_grid_fossil_fuel_percentage",
-               display_zero: true, state_type: "power",
-               name: p.get('name-fossil') || "Non Fossil", color_icon: colorIcon }
-    },
-    color_icon:             colorIcon,
-    clickable_entities:     bool('clickable_entities',  true),
-    display_zero_lines:     true,
-    use_new_flow_rate_model: true,
-    w_decimals:             num('w_decimals',           0),
-    kw_decimals:            num('kw_decimals',          1),
-    min_flow_rate:          num('min_flow_rate',        0.5),
-    max_flow_rate:          num('max_flow_rate',        7),
-    max_expected_power:     num('max_expected_power',   5000),
-    min_expected_power:     num('min_expected_power',   0.01),
-    watt_threshold:         num('watt_threshold',       1000),
-    grid_options: { rows: "auto" }
-  });
+  // Load initial data (includes _config written by update.py from settings.json)
+  const initData = await fetch('/local/views/power-flow-card-plus/data.json?t=' + Date.now())
+    .then(r => r.json()).catch(() => ({}));
+
+  // Build card config from settings (_config), then apply URL param overrides
+  const cfg = JSON.parse(JSON.stringify(initData._config || {}));
+  cfg.type = "custom:power-flow-card-plus";
+
+  const numKeys  = ['w_decimals','kw_decimals','watt_threshold','min_flow_rate','max_flow_rate','max_expected_power','min_expected_power'];
+  const boolKeys = ['clickable_entities','color_icon'];
+  for (const k of numKeys)  { const v = p.get(k); if (v !== null) cfg[k] = Number(v); }
+  for (const k of boolKeys) { const v = p.get(k); if (v !== null) cfg[k] = v !== 'false'; }
+
+  const nameMap = { 'name-grid': 'grid', 'name-solar': 'solar', 'name-house': 'home', 'name-fossil': 'fossil_fuel_percentage' };
+  for (const [param, key] of Object.entries(nameMap)) {
+    const v = p.get(param);
+    if (v !== null && cfg.entities?.[key]) cfg.entities[key].name = v;
+  }
+
+  card.setConfig(cfg);
 
   const viewName = p.get('name');
   if (viewName) {
@@ -180,34 +171,38 @@
     }
   });
 
+  function applyStates(data) {
+    if (data._error) return;
+    const states = Object.fromEntries(Object.entries(data).filter(([k]) => !k.startsWith('_')));
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    card.hass = {
+      states,
+      localize: (key) => key.split('.').pop().replace(/_/g, ' '),
+      locale: { language: "th", number_format: "decimal_dot", time_format: "language", date_format: "language", first_weekday: "monday" },
+      config: {
+        unit_system: { energy: "kWh", power: "W", length: "km", mass: "kg", pressure: "Pa", temperature: "°C", volume: "L" },
+        currency: "THB", country: "TH", time_zone: "Asia/Bangkok"
+      },
+      user: { is_admin: false, name: "monitor" },
+      themes: { darkMode: dark, theme: "default" },
+      selectedTheme: { dark: dark },
+      connected: true,
+      callService: () => Promise.resolve(),
+      callApi:     () => Promise.resolve()
+    };
+  }
+
   async function refresh() {
     try {
-      const res = await fetch('/local/views/power-flow-card-plus/data.json?t=' + Date.now());
-      const states = await res.json();
-      if (states._error) return;
-      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      card.hass = {
-        states,
-        localize: (key) => key.split('.').pop().replace(/_/g, ' '),
-        locale: { language: "th", number_format: "decimal_dot", time_format: "language", date_format: "language", first_weekday: "monday" },
-        config: {
-          unit_system: { energy: "kWh", power: "W", length: "km", mass: "kg", pressure: "Pa", temperature: "°C", volume: "L" },
-          currency: "THB", country: "TH", time_zone: "Asia/Bangkok"
-        },
-        user: { is_admin: false, name: "monitor" },
-        themes: { darkMode: dark, theme: "default" },
-        selectedTheme: { dark: dark },
-        connected: true,
-        callService: () => Promise.resolve(),
-        callApi:     () => Promise.resolve()
-      };
+      const data = await fetch('/local/views/power-flow-card-plus/data.json?t=' + Date.now()).then(r => r.json());
+      applyStates(data);
     } catch (e) {
       console.error('refresh failed:', e);
     }
   }
 
+  applyStates(initData);
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
-  refresh();
   setInterval(refresh, 15000);
 </script>
 </body>

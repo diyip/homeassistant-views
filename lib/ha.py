@@ -25,13 +25,38 @@ from __future__ import annotations
 import json
 import logging
 import os
+import ssl
+import urllib.parse
 import urllib.request
 
 import websocket
 
-SECRETS_FILE = "/config/myapp/secrets.json"
-HA_REST_URL  = "http://localhost:8123"
-HA_WS_URL    = "ws://localhost:8123/api/websocket"
+SECRETS_FILE  = "/config/myapp/views/secrets.json"
+SETTINGS_FILE = "/config/myapp/views/settings.json"
+
+
+def _internal_base_url() -> str:
+    """Derive the internal HA base URL from settings.json.
+
+    Reads ha_url (e.g. "https://myhost.example.com:48131"), keeps the scheme
+    and port, and replaces the hostname with localhost so scripts running inside
+    the HA container reach it directly without going through the external network.
+    """
+    with open(SETTINGS_FILE) as f:
+        ha_url = json.load(f)["ha_url"].rstrip("/")
+    parsed = urllib.parse.urlparse(ha_url)
+    port   = parsed.port or (443 if parsed.scheme == "https" else 80)
+    return f"{parsed.scheme}://localhost:{port}"
+
+
+_BASE_URL    = _internal_base_url()
+_WS_SCHEME   = "wss" if _BASE_URL.startswith("https") else "ws"
+_WS_BASE_URL = _WS_SCHEME + _BASE_URL[_BASE_URL.index("://"):]
+
+HA_REST_URL  = _BASE_URL
+HA_WS_URL    = f"{_WS_BASE_URL}/api/websocket"
+
+_SSL_CONTEXT = ssl._create_unverified_context()
 
 
 def configure_logging(name: str) -> logging.Logger:
@@ -53,7 +78,7 @@ def rest_get(path: str, token: str, timeout: int = 5):
         f"{HA_REST_URL}{path}",
         headers={"Authorization": f"Bearer {token}"},
     )
-    return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    return json.loads(urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT).read())
 
 
 def write_json(path: str, data: dict) -> None:
@@ -89,7 +114,9 @@ class HaWebSocket:
         self._next_id = 1
 
     def __enter__(self) -> HaWebSocket:
-        self._conn = websocket.create_connection(self._url, timeout=self._timeout)
+        self._conn = websocket.create_connection(
+            self._url, timeout=self._timeout, sslopt={"cert_reqs": ssl.CERT_NONE}
+        )
         self._conn.recv()  # auth_required frame
         self._conn.send(json.dumps({"type": "auth", "access_token": self._token}))
         auth = json.loads(self._conn.recv())

@@ -84,35 +84,12 @@
     const ts = data.timestamps;
     const R  = 4;   // corner radius (px)
 
-    // Floating bars: [timestamp, y_start, y_end]
-    // Overlay via barGap:'-100%' to visually stack without using ECharts stack,
-    // which silently ignores borderRadius on stacked series.
-    const solarData = ts.map((t, i) => {
-      const v    = data.solar_used[i];
-      const item = [t, 0, v];
-      // Round top only when solar is the topmost positive bar
-      return (v > 0 && data.grid_consumed[i] === 0)
-        ? { value: item, itemStyle: { borderRadius: [R, R, 0, 0] } }
-        : item;
-    });
-
-    const gridData = ts.map((t, i) => {
-      const base = data.solar_used[i];
-      const v    = data.grid_consumed[i];
-      const item = [t, base, base + v];
-      // Grid consumed is always the topmost positive bar when non-zero
-      return v > 0
-        ? { value: item, itemStyle: { borderRadius: [R, R, 0, 0] } }
-        : item;
-    });
-
-    const expData = ts.map((t, i) => {
-      const v    = data.grid_exported[i];   // negative
-      const item = [t, v, 0];
-      return v < 0
-        ? { value: item, itemStyle: { borderRadius: [0, 0, R, R] } }
-        : item;
-    });
+    // Standard [timestamp, value] format with stack for solar+grid.
+    // ECharts bar+time axis ignores a 3rd array element without explicit encode,
+    // so floating-bar [t, base, top] does not render correctly.
+    const solarData = ts.map((t, i) => [t, data.solar_used[i]]);
+    const gridData  = ts.map((t, i) => [t, data.grid_consumed[i]]);
+    const expData   = ts.map((t, i) => [t, data.grid_exported[i]]);  // negative values
 
     return {
       backgroundColor: 'transparent',
@@ -173,11 +150,11 @@
           let html = `<div style="font-weight:500;margin-bottom:4px">${fmt(d)} – ${fmt(end)}</div>`;
           let sumPositive = 0, countPositive = 0;
           params.forEach(p => {
-            const yStart = p.value[1], yEnd = p.value[2];
-            const v = yEnd - yStart;            // bar height (always positive)
+            const v = p.value[1];
             if (v === 0) return;
-            const isExport = yStart < 0;
-            const disp = v < 0.1 ? v.toFixed(3) : v.toFixed(2);
+            const isExport = v < 0;
+            const abs  = Math.abs(v);
+            const disp = abs < 0.1 ? abs.toFixed(3) : abs.toFixed(2);
             html += `<div>${p.marker} ${p.seriesName}: <span style="direction:ltr;display:inline">${disp} kWh</span></div>`;
             if (!isExport) { sumPositive += v; countPositive++; }
           });
@@ -191,19 +168,21 @@
         {
           name: 'Solar used',
           type: 'bar', barMaxWidth: 50, barCategoryGap: '15%',
-          color: solarFill, itemStyle: { borderWidth: 0 },
+          stack: 'total',
+          color: solarFill, itemStyle: { borderWidth: 0, borderRadius: [R, R, 0, 0] },
           data: solarData, emphasis: { disabled: true },
         },
         {
           name: 'Grid consumed',
-          type: 'bar', barMaxWidth: 50, barGap: '-100%',
-          color: gridFill, itemStyle: { borderWidth: 0 },
+          type: 'bar', barMaxWidth: 50,
+          stack: 'total',
+          color: gridFill, itemStyle: { borderWidth: 0, borderRadius: [R, R, 0, 0] },
           data: gridData, emphasis: { disabled: true },
         },
         {
           name: 'Grid exported',
           type: 'bar', barMaxWidth: 50, barGap: '-100%',
-          color: exportFill, itemStyle: { borderWidth: 0 },
+          color: exportFill, itemStyle: { borderWidth: 0, borderRadius: [0, 0, R, R] },
           data: expData, emphasis: { disabled: true },
         },
       ],

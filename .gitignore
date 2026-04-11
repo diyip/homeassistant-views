@@ -1,3 +1,7 @@
+# Instance-specific config — never commit
+secrets.json
+settings.json
+
 # Runtime data — never commit
 */data.json
 */ha_session.json
