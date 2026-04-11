@@ -93,41 +93,12 @@ Open `http://<ha-host>/local/views/<name>/index.html` — the card should show l
 
 ## Views
 
-| View | Refresh | URL | Notes |
+| View | Refresh | URL | Details |
 |---|---|---|---|
-| power-flow-card-plus | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
-| energy-usage-graph | 5 min | `/local/views/energy-usage-graph/index.html` | ECharts bar chart, entities from HA energy config |
+| [energy-usage-graph](energy-usage-graph/README.md) | 5 min | `/local/views/energy-usage-graph/index.html` | ECharts hourly bar chart, entities from HA energy config |
+| [power-flow-card-plus](power-flow-card-plus/README.md) | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) component |
 
----
-
-## energy-usage-graph URL parameters
-
-Entities are derived automatically from HA's Energy configuration — no explicit entity config needed.
-
-| Parameter | Default | Description |
-|---|---|---|
-| `name` | _(none)_ | Page title shown above chart |
-
----
-
-## power-flow-card-plus URL parameters
-
-| Parameter | Default | Description |
-|---|---|---|
-| `name-grid` | Grid | Grid circle label |
-| `name-solar` | Solar | Solar circle label |
-| `name-house` | Wit House | House circle label |
-| `name-fossil` | Non Fossil | Non-fossil circle label |
-| `name` | _(none)_ | Page title shown above card |
-| `w_decimals` | 0 | Decimal places for watts |
-| `kw_decimals` | 1 | Decimal places for kilowatts |
-| `min_flow_rate` | 0.5 | Minimum animation flow rate |
-| `max_flow_rate` | 7 | Maximum animation flow rate |
-| `max_expected_power` | 5000 | Max power (W) for flow scaling |
-| `min_expected_power` | 0.01 | Min power (W) for flow scaling |
-| `watt_threshold` | 1000 | W value above which kW is shown |
-| `color_icon` | true | Color icons by flow direction |
-| `clickable_entities` | true | Enable click on circles |
+See each view's README for URL parameters, data.json schema, chart implementation details, and visual comparison instructions.
 
 ---
 
@@ -135,7 +106,7 @@ Entities are derived automatically from HA's Energy configuration — no explici
 
 ```yaml
 type: iframe
-url: http://<ha-host>/local/views/power-flow-card-plus/index.html
+url: http://<ha-host>/local/views/<name>/index.html
 aspect_ratio: "75"
 ```
 
@@ -144,14 +115,10 @@ aspect_ratio: "75"
 ## Visual comparison tool
 
 ```bash
-cd /config/myapp/views/power-flow-card-plus   # or energy-usage-graph
+cd /config/myapp/views/<name>
 
-# First time — save HA browser session
-python3 compare.py --save-session
-
-# Normal use (headless)
-python3 compare.py
-# → standalone.png, ha.png, compare.png
+python3 compare.py --save-session   # first time — save HA browser session
+python3 compare.py                  # headless → standalone.png, ha.png, compare.png
 ```
 
 Requires: `pip install playwright pillow && playwright install chromium`
