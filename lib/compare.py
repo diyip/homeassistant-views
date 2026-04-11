@@ -99,11 +99,12 @@ def _save_session(pw, ha_url: str, session_file: Path) -> None:
 
 def _take_screenshots(pw, standalone_url: str, ha_url: str, session_file: Path,
                       standalone_selector: str | None,
-                      ha_selector: str) -> tuple[bytes, bytes]:
+                      ha_selector: str,
+                      color_scheme: str) -> tuple[bytes, bytes]:
     browser = pw.chromium.launch(headless=True)
 
-    print("Loading standalone page …")
-    ctx1  = browser.new_context(viewport=_VIEWPORT)
+    print(f"Loading standalone page ({color_scheme}) …")
+    ctx1  = browser.new_context(viewport=_VIEWPORT, color_scheme=color_scheme)
     page1 = ctx1.new_page()
     page1.goto(standalone_url, wait_until="networkidle", timeout=_LOAD_TIMEOUT_MS)
     page1.wait_for_timeout(_SETTLE_MS)
@@ -111,8 +112,9 @@ def _take_screenshots(pw, standalone_url: str, ha_url: str, session_file: Path,
     print("  done")
     ctx1.close()
 
-    print("Loading HA page …")
-    ctx2  = browser.new_context(viewport=_VIEWPORT, storage_state=str(session_file))
+    print(f"Loading HA page ({color_scheme}) …")
+    ctx2  = browser.new_context(viewport=_VIEWPORT, storage_state=str(session_file),
+                                color_scheme=color_scheme)
     page2 = ctx2.new_page()
     page2.on("console", lambda m: print(f"  [browser] {m.text}") if m.type == "error" else None)
     page2.goto(ha_url, wait_until="networkidle", timeout=_LOAD_TIMEOUT_MS)
@@ -165,22 +167,24 @@ def run(
             print("No session file found. Run:  python3 compare.py --save-session")
             sys.exit(1)
 
-        shot_s, shot_ha = _take_screenshots(
-            pw, standalone_url, ha_url, session_file, standalone_selector, ha_selector
-        )
+        for scheme in ("light", "dark"):
+            shot_s, shot_ha = _take_screenshots(
+                pw, standalone_url, ha_url, session_file,
+                standalone_selector, ha_selector, scheme,
+            )
 
-    img_s  = Image.open(io.BytesIO(shot_s))
-    img_ha = Image.open(io.BytesIO(shot_ha))
+            img_s  = Image.open(io.BytesIO(shot_s))
+            img_ha = Image.open(io.BytesIO(shot_ha))
 
-    p_s   = out_dir / "standalone.png"
-    p_ha  = out_dir / "ha.png"
-    p_cmp = out_dir / "compare.png"
+            p_s   = out_dir / f"standalone_{scheme}.png"
+            p_ha  = out_dir / f"ha_{scheme}.png"
+            p_cmp = out_dir / f"compare_{scheme}.png"
 
-    img_s.save(p_s)
-    img_ha.save(p_ha)
-    print(f"Saved {p_s}  ({img_s.width}×{img_s.height})")
-    print(f"Saved {p_ha}  ({img_ha.width}×{img_ha.height})")
+            img_s.save(p_s)
+            img_ha.save(p_ha)
+            print(f"Saved {p_s}  ({img_s.width}×{img_s.height})")
+            print(f"Saved {p_ha}  ({img_ha.width}×{img_ha.height})")
 
-    cmp = _make_comparison(img_s, img_ha, label_a="standalone", label_b=ha_label)
-    cmp.save(p_cmp)
-    print(f"Saved {p_cmp}  ({cmp.width}×{cmp.height})")
+            cmp = _make_comparison(img_s, img_ha, label_a="standalone", label_b=ha_label)
+            cmp.save(p_cmp)
+            print(f"Saved {p_cmp}  ({cmp.width}×{cmp.height})")
