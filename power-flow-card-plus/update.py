@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-power-flow view updater.
+power-flow-card-plus view updater.
 
 Purpose:
-    Fetch the current state of power-flow entities from HA and write data.json
-    for the card view to consume.
+    Fetch the current state of power-flow-card-plus entities from HA and write
+    data.json for the card view to consume.
 
 Responsibilities:
     - Fetch configured entity states from the HA REST API
@@ -23,7 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.ha import configure_logging, error_output, load_token, rest_get, write_json
 
-OUTPUT_FILE = "/config/www/views/power-flow/data.json"
+OUTPUT_FILE = "/config/www/views/power-flow-card-plus/data.json"
 
 ENTITIES = frozenset({
     "sensor.wit_grid_w",
@@ -32,7 +32,7 @@ ENTITIES = frozenset({
     "sensor.electricity_maps_grid_fossil_fuel_percentage",
 })
 
-log = configure_logging("power-flow.update")
+log = configure_logging("power-flow-card-plus.update")
 
 
 def main() -> None:

@@ -95,7 +95,7 @@ Open `http://<ha-host>/local/views/<name>/index.html` — the card should show l
 
 | View | Refresh | URL | Notes |
 |---|---|---|---|
-| power-flow | 15 s | `/local/views/power-flow/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) |
+| power-flow-card-plus | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus-card-plus](https://github.com/flixlix/power-flow-card-plus-card-plus) |
 | energy-usage-graph | 5 min | `/local/views/energy-usage-graph/index.html` | ECharts bar chart, entities from HA energy config |
 
 ---
@@ -110,7 +110,7 @@ Entities are derived automatically from HA's Energy configuration — no explici
 
 ---
 
-## power-flow URL parameters
+## power-flow-card-plus URL parameters
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -135,7 +135,7 @@ Entities are derived automatically from HA's Energy configuration — no explici
 
 ```yaml
 type: iframe
-url: http://<ha-host>/local/views/power-flow/index.html
+url: http://<ha-host>/local/views/power-flow-card-plus/index.html
 aspect_ratio: "75"
 ```
 
@@ -144,7 +144,7 @@ aspect_ratio: "75"
 ## Visual comparison tool
 
 ```bash
-cd /config/myapp/views/power-flow   # or energy-usage-graph
+cd /config/myapp/views/power-flow-card-plus   # or energy-usage-graph
 
 # First time — save HA browser session
 python3 compare.py --save-session

@@ -1,0 +1,14 @@
+# power-flow-card-plus — HA shell_command + automation to refresh data every 15 s
+
+shell_command:
+  views_update_power_flow_card_plus: "python3 /config/myapp/views/power-flow-card-plus/update.py"
+
+automation:
+  - alias: "views: Refresh Power Flow Card Plus data"
+    id: views_refresh_power_flow_card_plus
+    trigger:
+      - platform: time_pattern
+        seconds: "/15"
+    action:
+      - service: shell_command.views_update_power_flow_card_plus
+    mode: single

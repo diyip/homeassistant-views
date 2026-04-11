@@ -1,8 +1,8 @@
 <!--
-  power-flow — real-time power flow card
+  power-flow-card-plus — real-time power flow card
 
-  Served at: /local/views/power-flow/index.html
-  Data from: /local/views/power-flow/data.json  (refreshed every 15 s by update.py)
+  Served at: /local/views/power-flow-card-plus/index.html
+  Data from: /local/views/power-flow-card-plus/data.json  (refreshed every 15 s by update.py)
 
   URL parameters (all optional):
     name=Page+Title
@@ -182,7 +182,7 @@
 
   async function refresh() {
     try {
-      const res = await fetch('/local/views/power-flow/data.json?t=' + Date.now());
+      const res = await fetch('/local/views/power-flow-card-plus/data.json?t=' + Date.now());
       const states = await res.json();
       if (states._error) return;
       const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
