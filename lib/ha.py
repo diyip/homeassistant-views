@@ -28,25 +28,43 @@ import os
 import ssl
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 import websocket
 
-SECRETS_FILE  = "/config/myapp/views/secrets.json"
-SETTINGS_FILE = "/config/myapp/views/settings.json"
+# Inside the HA container /config is the config dir; on the host it lives under
+# the hassio homeassistant directory.  Resolve whichever exists.
+def _config_root() -> str:
+    import os
+    if os.path.isdir("/config"):
+        return "/config"
+    # Walk up from this file: lib/ → views/ → myapp/ → homeassistant/
+    return str(Path(__file__).resolve().parents[3])
+
+_CONFIG_ROOT  = _config_root()
+SECRETS_FILE  = f"{_CONFIG_ROOT}/myapp/views/secrets.json"
+SETTINGS_FILE = f"{_CONFIG_ROOT}/myapp/views/settings.json"
 
 
 def _internal_base_url() -> str:
-    """Derive the internal HA base URL from settings.json.
+    """Derive the best reachable HA base URL from settings.json.
 
-    Reads ha_url (e.g. "https://myhost.example.com:48131"), keeps the scheme
-    and port, and replaces the hostname with localhost so scripts running inside
-    the HA container reach it directly without going through the external network.
+    Tries localhost first (works when running inside the HA Docker container),
+    then falls back to the external URL from settings.json (works on the host).
     """
     with open(SETTINGS_FILE) as f:
         ha_url = json.load(f)["ha_url"].rstrip("/")
     parsed = urllib.parse.urlparse(ha_url)
     port   = parsed.port or (443 if parsed.scheme == "https" else 80)
-    return f"{parsed.scheme}://localhost:{port}"
+    local  = f"{parsed.scheme}://localhost:{port}"
+    try:
+        req = urllib.request.Request(f"{local}/api/", headers={"Authorization": "Bearer test"})
+        urllib.request.urlopen(req, timeout=2, context=ssl._create_unverified_context())
+    except urllib.error.HTTPError:
+        return local   # got a real HTTP response (e.g. 401) — localhost works
+    except OSError:
+        return ha_url  # connection refused or network error — use external URL
+    return local
 
 
 _BASE_URL    = _internal_base_url()

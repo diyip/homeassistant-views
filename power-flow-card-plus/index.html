@@ -190,6 +190,15 @@
     if (!handled) cfg[param] = val;
   }
 
+  if (initData._error || !cfg.entities) {
+    const msg = initData._error
+      ? `Data unavailable: ${initData._error}`
+      : 'Config not ready — check settings.json and data.json';
+    document.getElementById('wrap').innerHTML =
+      `<p style="color:var(--secondary-text-color);font-size:13px;text-align:center;padding:16px">${msg}</p>`;
+    throw new Error(msg);
+  }
+
   card.setConfig(cfg);
 
   const viewName = p.get('name');

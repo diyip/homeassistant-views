@@ -25,8 +25,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from lib.ha import configure_logging, error_output, load_token, rest_get, write_json
 
-OUTPUT_FILE   = "/config/www/views/power-flow-card-plus/data.json"
-SETTINGS_FILE = "/config/myapp/views/settings.json"
+from lib.ha import SETTINGS_FILE
+
+_HA_ROOT    = Path(SETTINGS_FILE).parents[2]
+OUTPUT_FILE = str(_HA_ROOT / "www/views/power-flow-card-plus/data.json")
 
 log = configure_logging("power-flow-card-plus.update")
 
