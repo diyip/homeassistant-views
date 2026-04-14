@@ -35,20 +35,20 @@ Shows "CAR PARK ENERGY" above the chart and sets the browser tab title.
 ### 3. Show yesterday + today
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=1
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=2
 ```
 
-Start moves back 1 day to yesterday 00:00; end is always today 23:00.
+Shows yesterday 00:00 through today 23:00 — 2 days total. End is always today 23:00.
 
 ---
 
 ### 4. Show the past week
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=6
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=7
 ```
 
-Six days ago 00:00 through today 23:00 — a full 7-day view. Maximum is `days=6`.
+Shows the past 7 days. Maximum is `days=7`.
 
 ---
 
@@ -69,7 +69,7 @@ Maximum is `hours=168` (7 days).
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?show_date=true
 ```
 
-Shows the date above the chart (hidden by default). Most useful with `days=1` or
+Shows the date above the chart (hidden by default). Most useful with `days=2` or
 more, where the chart spans multiple days.
 
 ---
@@ -77,7 +77,7 @@ more, where the chart spans multiple days.
 ### 7. Full combination
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&days=6&show_date=true
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&days=7&show_date=true
 ```
 
 Page title, past week view, and date label — all combined.
@@ -89,7 +89,7 @@ Page title, past week view, and date label — all combined.
 | Parameter | Default | Description |
 |---|---|---|
 | `name` | _(none)_ | Page title shown above chart; also sets `document.title` |
-| `days` | `0` | Days back from today: `0`=today only, `6`=six days ago to today. Start is N days ago 00:00 Bangkok, end is always today 23:00. Max `6`. |
+| `days` | _(none)_ | Number of days to show: `1`=today only, `2`=yesterday+today, `7`=past week. End is always today 23:00. Max `7`. |
 | `hours` | _(none)_ | Rolling window: last N hours from now. Max `168`. Takes effect only when `days` is not set. |
 | `show_date` | `false` | Show the date label above the chart |
 
@@ -142,8 +142,8 @@ grid_exported = −grid_to   (negated for below-axis rendering)
 
 `index.html` slices `data.json` to the requested window at render time:
 
-- **Default / `?days=0`** — today midnight to 23:00 Bangkok
-- **`?days=N`** — N days ago midnight to today 23:00 Bangkok
+- **Default / `?days=1`** — today midnight to 23:00 Bangkok
+- **`?days=N`** — (N-1) days ago midnight to today 23:00 Bangkok
 - **`?hours=N`** — rolling `Date.now() − N hours` to now
 
 ---

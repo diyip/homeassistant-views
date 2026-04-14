@@ -7,8 +7,8 @@
   URL parameters:
     name=Page+Title   optional page title shown above chart
     hours=24          rolling window: last N hours from now (max 168)
-    days=1            days back from today: 0=today, 1=yesterday+today, 2=two days ago to today
-                      start is always N days ago at 00:00, end is always today at 23:00
+    days=1            number of days to show: 1=today only, 2=yesterday+today, 7=past week
+                      start is always (days-1) days ago at 00:00, end is always today at 23:00
                       (days takes priority over hours when both are set)
     show_date=true    show the date label above the chart (hidden by default)
 -->
@@ -63,7 +63,7 @@
   const hoursParam = p.get('hours');
   const hours = hoursParam ? Math.min(Math.max(parseInt(hoursParam, 10), 1), 168) : null;
   const daysParam = p.get('days');
-  const days = daysParam !== null ? Math.min(Math.max(parseInt(daysParam, 10), 0), 6) : null;
+  const days = daysParam !== null ? Math.min(Math.max(parseInt(daysParam, 10), 1), 7) : null;
 
   const viewName = p.get('name');
   if (viewName) {
@@ -219,7 +219,7 @@
 
       let displayStart, displayEnd;
       if (days !== null) {
-        displayStart = todayMidnight - days * 86_400_000;
+        displayStart = todayMidnight - (days - 1) * 86_400_000;
         displayEnd   = todayEnd;
       } else if (hours) {
         displayEnd   = Date.now();
