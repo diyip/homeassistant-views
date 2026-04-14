@@ -1,11 +1,12 @@
 <!--
-  energy-usage-graph — today's hourly energy usage chart
+  energy-usage-graph — hourly energy usage chart
 
   Served at: /local/views/energy-usage-graph/index.html
   Data from: /local/views/energy-usage-graph/data.json  (refreshed every 5 min by update.py)
 
   URL parameters:
     name=Page+Title   optional page title shown above chart
+    hours=24          hours of history to display (default 24, max 48)
     show_date=true    show the date label above the chart (hidden by default)
 -->
 <!DOCTYPE html>
@@ -56,6 +57,7 @@
 <script>
   const p    = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const hours = Math.min(Math.max(parseInt(p.get('hours') || '24', 10), 1), 48);
 
   const viewName = p.get('name');
   if (viewName) {
@@ -82,25 +84,20 @@
 
   const chart = echarts.init(document.getElementById('chart'), dark ? 'dark' : null, { renderer: 'canvas' });
 
-  function buildOption(data) {
-    const ts = data.timestamps;
-    const R  = 4;   // corner radius (px)
-
-    // Standard [timestamp, value] format with stack for solar+grid.
-    // ECharts bar+time axis ignores a 3rd array element without explicit encode,
-    // so floating-bar [t, base, top] does not render correctly.
-    const solarData = ts.map((t, i) => [t, data.solar_used[i]]);
-    const gridData  = ts.map((t, i) => [t, data.grid_consumed[i]]);
-    const expData   = ts.map((t, i) => [t, data.grid_exported[i]]);  // negative values
+  function buildOption(timestamps, gridConsumed, solarUsed, gridExported, displayStart, displayEnd) {
+    const R = 4;   // corner radius (px)
+    const solarData = timestamps.map((t, i) => [t, solarUsed[i]]);
+    const gridData  = timestamps.map((t, i) => [t, gridConsumed[i]]);
+    const expData   = timestamps.map((t, i) => [t, gridExported[i]]);
 
     return {
       backgroundColor: 'transparent',
       textStyle: { fontFamily: 'Roboto, Noto, sans-serif', color: textColor },
-      grid: { top: 15, bottom: 0, left: 1, right: 1, containLabel: true },
+      grid: { top: 15, bottom: 0, left: 1, right: 20, containLabel: true },
       xAxis: {
         type: 'time',
-        min: data.start_ms,
-        max: data.end_ms,
+        min: displayStart,
+        max: displayEnd,
         axisLabel: {
           color: textColor,
           fontSize: 12,
@@ -204,7 +201,18 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('chart-date').textContent = data.date || '';
 
-      chart.setOption(buildOption(data), { notMerge: true });
+      // Slice to the requested window
+      const displayEnd   = Date.now();
+      const displayStart = displayEnd - hours * 3_600_000;
+      const mask = data.timestamps.map(t => t >= displayStart);
+
+      const timestamps   = data.timestamps.filter((_, i) => mask[i]);
+      const gridConsumed = data.grid_consumed.filter((_, i) => mask[i]);
+      const solarUsed    = data.solar_used.filter((_, i) => mask[i]);
+      const gridExported = data.grid_exported.filter((_, i) => mask[i]);
+
+      chart.setOption(buildOption(timestamps, gridConsumed, solarUsed, gridExported,
+                                  displayStart, displayEnd), { notMerge: true });
     } catch (e) {
       console.error('refresh failed:', e);
     }
