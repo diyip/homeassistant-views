@@ -30,7 +30,7 @@ from lib.ha import HaWebSocket, configure_logging, error_output, load_token, wri
 
 OUTPUT_FILE  = "/config/www/views/energy-usage-graph/data.json"
 BANGKOK      = timezone(timedelta(hours=7))
-WINDOW_HOURS = 168   # hours of data written to data.json; index.html slices this
+WINDOW_DAYS = 7   # days of data written to data.json; index.html slices this
 
 log = configure_logging("energy-usage-graph.update")
 
@@ -112,7 +112,7 @@ def build_result(grid_from: dict, grid_to: dict, solar: dict,
 def main() -> None:
     token = load_token()
     now   = datetime.now(BANGKOK)
-    start = now - timedelta(hours=WINDOW_HOURS)
+    start = now - timedelta(days=WINDOW_DAYS)
 
     with HaWebSocket(token) as ws:
         entity_roles = fetch_entity_roles(ws)
