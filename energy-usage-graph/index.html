@@ -203,7 +203,7 @@
       document.getElementById('chart-date').textContent = data.date || '';
 
       // Compute display window:
-      // default → today 00:00–24:00 Bangkok time (UTC+7)
+      // default → today 00:00–23:00 Bangkok time (UTC+7)
       // ?hours=N → rolling last N hours from now
       let displayStart, displayEnd;
       if (hours) {
@@ -213,7 +213,7 @@
         const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
         const nowBangkok = Date.now() + BANGKOK_OFFSET_MS;
         displayStart = nowBangkok - (nowBangkok % 86_400_000) - BANGKOK_OFFSET_MS;
-        displayEnd   = displayStart + 86_400_000;
+        displayEnd   = displayStart + 23 * 3_600_000;
       }
       const mask = data.timestamps.map(t => t >= displayStart && t < displayEnd);
 
