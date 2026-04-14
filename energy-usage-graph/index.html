@@ -213,7 +213,7 @@
       const BANGKOK_MS = 7 * 60 * 60 * 1000;
       const nowBangkok = Date.now() + BANGKOK_MS;
       const todayMidnight = nowBangkok - (nowBangkok % 86_400_000) - BANGKOK_MS;
-      const todayEnd = todayMidnight + 24 * 3_600_000;
+      const todayEnd = todayMidnight + 23 * 3_600_000;
 
       let displayStart, displayEnd;
       if (days !== null) {
