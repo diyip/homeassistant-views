@@ -10,6 +10,8 @@ Served at: `/local/views/energy-usage-graph/index.html`
 
 ## Common use cases
 
+All parameters are optional and can be combined freely.
+
 ### 1. Default — today
 
 ```
@@ -26,6 +28,8 @@ Shows today 00:00 – 23:00 Bangkok time.
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy
 ```
 
+Shows "CAR PARK ENERGY" above the chart and sets the browser tab title.
+
 ---
 
 ### 3. Show yesterday + today
@@ -34,7 +38,7 @@ https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=C
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=1
 ```
 
-Start shifts back N days to 00:00; end is always today 23:00.
+Start moves back 1 day to yesterday 00:00; end is always today 23:00.
 
 ---
 
@@ -44,7 +48,7 @@ Start shifts back N days to 00:00; end is always today 23:00.
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=6
 ```
 
-Six days ago 00:00 through today 23:00. Maximum is `days=6` (7 days total).
+Six days ago 00:00 through today 23:00 — a full 7-day view. Maximum is `days=6`.
 
 ---
 
@@ -54,7 +58,8 @@ Six days ago 00:00 through today 23:00. Maximum is `days=6` (7 days total).
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?hours=36
 ```
 
-Last 36 hours from now, rolling. Maximum is `hours=168` (7 days).
+Last 36 hours from now, rolling — useful for overnight views that span two days.
+Maximum is `hours=168` (7 days).
 
 ---
 
@@ -64,7 +69,8 @@ Last 36 hours from now, rolling. Maximum is `hours=168` (7 days).
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?show_date=true
 ```
 
-Shows the date above the chart (hidden by default).
+Shows the date above the chart (hidden by default). Most useful with `days=1` or
+more, where the chart spans multiple days.
 
 ---
 
@@ -74,6 +80,8 @@ Shows the date above the chart (hidden by default).
 https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&days=6&show_date=true
 ```
 
+Page title, past week view, and date label — all combined.
+
 ---
 
 ## URL parameters
@@ -82,7 +90,7 @@ https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=C
 |---|---|---|
 | `name` | _(none)_ | Page title shown above chart; also sets `document.title` |
 | `days` | `0` | Days back from today: `0`=today only, `6`=six days ago to today. Start is N days ago 00:00 Bangkok, end is always today 23:00. Max `6`. |
-| `hours` | _(none)_ | Rolling window: last N hours from now. Max `168`. Takes effect only when `day` is not set. |
+| `hours` | _(none)_ | Rolling window: last N hours from now. Max `168`. Takes effect only when `days` is not set. |
 | `show_date` | `false` | Show the date label above the chart |
 
 ---
