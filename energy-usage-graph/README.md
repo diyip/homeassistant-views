@@ -31,7 +31,7 @@ https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=C
 ### 3. Show yesterday + today
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?day=1
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=1
 ```
 
 Start shifts back N days to 00:00; end is always today 23:00.
@@ -41,10 +41,10 @@ Start shifts back N days to 00:00; end is always today 23:00.
 ### 4. Show the past week
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?day=6
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=6
 ```
 
-Six days ago 00:00 through today 23:00. Maximum is `day=6` (7 days total).
+Six days ago 00:00 through today 23:00. Maximum is `days=6` (7 days total).
 
 ---
 
@@ -71,7 +71,7 @@ Shows the date above the chart (hidden by default).
 ### 7. Full combination
 
 ```
-https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&day=6&show_date=true
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&days=6&show_date=true
 ```
 
 ---
@@ -81,7 +81,7 @@ https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=C
 | Parameter | Default | Description |
 |---|---|---|
 | `name` | _(none)_ | Page title shown above chart; also sets `document.title` |
-| `day` | `0` | Days back from today: `0`=today only, `6`=six days ago to today. Start is N days ago 00:00 Bangkok, end is always today 23:00. Max `6`. |
+| `days` | `0` | Days back from today: `0`=today only, `6`=six days ago to today. Start is N days ago 00:00 Bangkok, end is always today 23:00. Max `6`. |
 | `hours` | _(none)_ | Rolling window: last N hours from now. Max `168`. Takes effect only when `day` is not set. |
 | `show_date` | `false` | Show the date label above the chart |
 
@@ -134,8 +134,8 @@ grid_exported = −grid_to   (negated for below-axis rendering)
 
 `index.html` slices `data.json` to the requested window at render time:
 
-- **Default / `?day=0`** — today midnight to 23:00 Bangkok
-- **`?day=N`** — N days ago midnight to today 23:00 Bangkok
+- **Default / `?days=0`** — today midnight to 23:00 Bangkok
+- **`?days=N`** — N days ago midnight to today 23:00 Bangkok
 - **`?hours=N`** — rolling `Date.now() − N hours` to now
 
 ---
