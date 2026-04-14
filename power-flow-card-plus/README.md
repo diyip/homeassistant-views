@@ -212,7 +212,8 @@ To change entities or card parameters, edit `settings.json` and wait for the nex
 
 ## data.json schema
 
-Written to `/config/www/views/power-flow-card-plus/data.json`.
+Written to `<ha-root>/www/views/power-flow-card-plus/data.json`
+(inside the container: `/config/www/views/power-flow-card-plus/data.json`).
 
 The file contains the card config plus a flat map of `entity_id → HA state object`:
 
@@ -239,38 +240,19 @@ valid state remains displayed.
 
 ---
 
-## URL parameters
+## URL parameters reference
 
 All parameters are optional. Defaults come from `settings.json` via `data.json`.
+URL parameters always override `settings.json` values. See the
+[Common use cases](#common-use-cases) section above for practical examples.
 
-Values are automatically coerced to the right JS type:
-- `"true"` / `"false"` → boolean
-- numeric strings → number
-- everything else → string
+### Page title
 
-**Priority:** URL parameters always override `settings.json` values.
-
-**Forward compatibility:** Any parameter key not explicitly handled is passed
-directly to the card config as a top-level key. This means new parameters
-introduced in future card versions work without any code changes — just add
-them to the URL.
-
----
-
-### Page title — `name=...`
-
-Sets the label shown above the card and the browser tab title.
-
-```
-?name=Power+Flow
-?name=Car+Park+B1
-```
-
----
+| Parameter | Description |
+|---|---|
+| `name` | Label shown above card; also sets the browser tab title |
 
 ### Top-level card overrides — `key=value`
-
-Apply directly to the root card config object.
 
 | Parameter | Default | Description |
 |---|---|---|
@@ -283,30 +265,7 @@ Apply directly to the root card config object.
 | `watt_threshold` | `1000` | Switch from W to kW display above this value |
 | `display_zero_lines` | `false` | Show flow lines even when value is 0 |
 
-**Common examples:**
-
-```
-# Show more decimal places
-?kw_decimals=2
-
-# Show flow lines at zero (useful for monitoring idle state)
-?display_zero_lines=true
-
-# Slow down animations for a calmer display
-?max_flow_rate=3
-
-# Switch to kW earlier (e.g. for a high-power site)
-?watt_threshold=500
-
-# Combine multiple overrides
-?kw_decimals=2&display_zero_lines=true&max_flow_rate=3
-```
-
----
-
 ### Named entity overrides — `entityname_key=value`
-
-Override any field of a named entity. Prefix the key with the entity name and `_`.
 
 Named entities: `grid`, `solar`, `home`, `fossil_fuel_percentage`
 
@@ -315,66 +274,25 @@ Named entities: `grid`, `solar`, `home`, `fossil_fuel_percentage`
 | `?grid_name=Mains` | Rename grid label |
 | `?solar_name=PV+Roof` | Rename solar label |
 | `?home_name=Office` | Rename home label |
+| `?solar_icon=mdi:solar-panel` | Change solar icon |
 | `?solar_display_zero=true` | Show solar circle even at 0 W |
 | `?grid_display_zero_tolerance=100` | Treat grid < 100 W as zero |
 | `?fossil_fuel_percentage_color_icon=false` | Disable colour icon for non-fossil |
 
-**Common examples:**
-
-```
-# Rename labels for a specific location
-?grid_name=Mains&solar_name=Rooftop+PV&home_name=Building+A
-
-# Keep solar circle visible even at night
-?solar_display_zero=true
-
-# Combine with a page title
-?name=Building+A&grid_name=Mains&solar_name=Rooftop+PV
-```
-
----
-
 ### Individual entity overrides — `individual_N_key=value`
 
-Override any field of an individual entity. Index `N` is 0-based, matching the
-order of the `individual` array in `settings.json`.
+Index `N` is 0-based, matching the order of the `individual` array in `settings.json`.
 
 | Example | Effect |
 |---|---|
 | `?individual_0_name=EV` | Rename first individual label |
+| `?individual_0_icon=mdi:car-electric` | Change first individual icon |
 | `?individual_0_color_icon=false` | Disable colour icon for first individual |
 | `?individual_0_display_zero=true` | Show first individual even at 0 W |
 | `?individual_1_name=HVAC` | Rename second individual label |
 
-**Common examples:**
-
-```
-# Rename individual devices
-?individual_0_name=EV+Chargers&individual_1_name=HVAC
-
-# Show all individuals even at zero (useful for monitoring)
-?individual_0_display_zero=true&individual_1_display_zero=true
-```
-
 > **Note:** `display_zero: false` for individual entities does not hide the
 > circle in power-flow-card-plus v0.3.2 — this is a card limitation.
-
----
-
-### Full example URL
-
-```
-https://<ha-host>/local/views/power-flow-card-plus/index.html
-  ?name=Car+Park+B1
-  &kw_decimals=2
-  &display_zero_lines=true
-  &solar_name=Rooftop+PV
-  &solar_display_zero=true
-  &individual_0_name=EV+Chargers
-  &individual_0_display_zero=true
-```
-
-(Line breaks added for readability — use as a single URL.)
 
 ---
 
@@ -402,7 +320,8 @@ this when updating the component to force browsers to reload it.
 ## Visual comparison
 
 ```bash
-cd /config/myapp/views/power-flow-card-plus
+cd <ha-root>/myapp/views/power-flow-card-plus   # host path
+# or inside the container: cd /config/myapp/views/power-flow-card-plus
 
 python3 compare.py --save-session   # once per HA instance — saves shared session
 python3 compare.py                  # → ~/tmp/views-compare/power-flow-card-plus/compare_light.png
