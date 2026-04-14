@@ -56,12 +56,12 @@ def main() -> None:
     entity_ids = extract_entity_ids(cfg)
 
     token  = load_token()
-    states = rest_get("/api/states", token)
-    result = {s["entity_id"]: s for s in states if s["entity_id"] in entity_ids}
-
-    missing = entity_ids - result.keys()
-    if missing:
-        log.warning("Missing entities: %s", sorted(missing))
+    result = {}
+    for eid in sorted(entity_ids):
+        try:
+            result[eid] = rest_get(f"/api/states/{eid}", token)
+        except Exception as exc:
+            log.warning("Missing entity %s: %s", eid, exc)
 
     result["_config"] = cfg
     write_json(OUTPUT_FILE, result)

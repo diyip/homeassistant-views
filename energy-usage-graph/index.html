@@ -63,7 +63,7 @@
   const hoursParam = p.get('hours');
   const hours = hoursParam ? Math.min(Math.max(parseInt(hoursParam, 10), 1), 168) : null;
   const daysParam = p.get('days');
-  const days = daysParam !== null ? Math.min(Math.max(parseInt(daysParam, 10), 1), 7) : null;
+  const days = daysParam ? Math.min(Math.max(parseInt(daysParam, 10), 1), 7) : null;
 
   const viewName = p.get('name');
   if (viewName) {
@@ -79,7 +79,6 @@
 
   const CSS          = getComputedStyle(document.documentElement);
   const textColor    = CSS.getPropertyValue('--primary-text-color').trim();
-  const subtextColor = CSS.getPropertyValue('--secondary-text-color').trim();
   const dividerColor = CSS.getPropertyValue('--divider-color').trim();
   const gridColor    = CSS.getPropertyValue('--energy-grid-consumption-color').trim();
   const solarColor   = CSS.getPropertyValue('--energy-solar-color').trim();
@@ -113,7 +112,7 @@
             if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
               return `{bold|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
             }
-            return `${String(d.getHours()).padStart(2, '0')}:00`;
+            return `${String(dt.getHours()).padStart(2, '0')}:00`;
           },
           rich: { bold: { fontWeight: 'bold' } },
         },
@@ -151,7 +150,7 @@
           if (!ts) return '';
           const d   = new Date(ts);
           const end = new Date(ts + 3600000);
-          const fmt = d => `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+          const fmt = dt => `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
           let html = `<div style="font-weight:500;margin-bottom:4px">${fmt(d)} – ${fmt(end)}</div>`;
           let sumPositive = 0, countPositive = 0;
           params.forEach(p => {
