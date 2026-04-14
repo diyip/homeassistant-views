@@ -5,13 +5,26 @@
   Data from: /local/views/power-flow-card-plus/data.json  (refreshed every 15 s by update.py)
 
   URL parameters (all optional):
-    name=Page+Title
-    name-grid=Grid        name-solar=Solar
-    name-house=Wit+House  name-fossil=Non+Fossil
-    w_decimals=0          kw_decimals=1
-    min_flow_rate=0.5     max_flow_rate=7
-    max_expected_power=5000   min_expected_power=0.01
-    watt_threshold=1000   color_icon=true   clickable_entities=true
+    name=Page+Title                     — page/tab title
+
+    Top-level overrides (<<key>>=<<value>>):
+      w_decimals=0        kw_decimals=1
+      min_flow_rate=0.5   max_flow_rate=7
+      max_expected_power=250000         min_expected_power=10000
+      watt_threshold=1000               display_zero_lines=true
+
+    Named-entity overrides (<<entity>>_<<key>>=<<value>>):
+      Entity names: grid, solar, home, fossil_fuel_percentage
+      Examples:
+        solar_display_zero=true
+        grid_name=My+Grid
+        fossil_fuel_percentage_color_icon=false
+
+    Individual overrides (individual_<<index>>_<<key>>=<<value>>):
+      Examples:
+        individual_0_display_zero=true
+        individual_1_name=EV+Charger+2
+        individual_2_color_icon=false
 -->
 <!DOCTYPE html>
 <html lang="th">
@@ -39,10 +52,10 @@
       --primary-text-color: #212121;
       --secondary-text-color: #727272;
       --disabled-text-color: #bdbdbd;
-      --primary-background-color: #fafafa;
-      --secondary-background-color: #e5e5e5;
-      --card-background-color: #ffffff;
-      --ha-card-background: #ffffff;
+      --primary-background-color: transparent;
+      --secondary-background-color: transparent;
+      --card-background-color: transparent;
+      --ha-card-background: transparent;
       --divider-color: rgba(0,0,0,0.12);
       color-scheme: light dark;
     }
@@ -51,17 +64,17 @@
         --primary-text-color: #e1e1e1;
         --secondary-text-color: #9b9b9b;
         --disabled-text-color: #6f6f6f;
-        --primary-background-color: #111827;
-        --secondary-background-color: #1f2937;
-        --card-background-color: #1f2937;
-        --ha-card-background: #1f2937;
+        --primary-background-color: transparent;
+        --secondary-background-color: transparent;
+        --card-background-color: transparent;
+        --ha-card-background: transparent;
         --divider-color: rgba(225,225,225,0.12);
       }
     }
-    html, body { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: var(--primary-background-color); font-family: 'Roboto', sans-serif; }
+    html, body { margin: 0; padding: 0; overflow: hidden; width: 100%; height: 100%; background: transparent; font-family: 'Roboto', sans-serif; }
     #wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; box-sizing: border-box; padding: 8px; }
     #view-name { font-size: 13px; font-weight: 500; color: var(--secondary-text-color); padding: 0 0 4px; letter-spacing: 0.04em; text-transform: uppercase; display: none; }
-    power-flow-card-plus { display: block; width: 100%; max-width: 502px; }
+    power-flow-card-plus { display: block; width: 100%; }
   </style>
 </head>
 <body>
@@ -128,23 +141,53 @@
   const card = document.createElement('power-flow-card-plus');
   const p    = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
 
-  // Load initial data (includes _config written by update.py from settings.json)
+  // Load initial data — _config comes from settings.json via update.py
   const initData = await fetch('/local/views/power-flow-card-plus/data.json?t=' + Date.now())
     .then(r => r.json()).catch(() => ({}));
 
-  // Build card config from settings (_config), then apply URL param overrides
+  // Coerce URL string values to appropriate JS types
+  function coerce(v) {
+    if (v === 'true')  return true;
+    if (v === 'false') return false;
+    const n = Number(v);
+    return (!isNaN(n) && v !== '') ? n : v;
+  }
+
+  // Apply URL param overrides onto a deep copy of _config from settings.json
+  // Named entities sorted longest-first to avoid prefix collisions
+  const entityNames = ['fossil_fuel_percentage', 'grid', 'solar', 'home'];
+
   const cfg = JSON.parse(JSON.stringify(initData._config || {}));
   cfg.type = "custom:power-flow-card-plus";
 
-  const numKeys  = ['w_decimals','kw_decimals','watt_threshold','min_flow_rate','max_flow_rate','max_expected_power','min_expected_power'];
-  const boolKeys = ['clickable_entities','color_icon'];
-  for (const k of numKeys)  { const v = p.get(k); if (v !== null) cfg[k] = Number(v); }
-  for (const k of boolKeys) { const v = p.get(k); if (v !== null) cfg[k] = v !== 'false'; }
+  for (const [param, raw] of p.entries()) {
+    if (param === 'name') continue; // handled separately below
+    const val = coerce(raw);
+    let handled = false;
 
-  const nameMap = { 'name-grid': 'grid', 'name-solar': 'solar', 'name-house': 'home', 'name-fossil': 'fossil_fuel_percentage' };
-  for (const [param, key] of Object.entries(nameMap)) {
-    const v = p.get(param);
-    if (v !== null && cfg.entities?.[key]) cfg.entities[key].name = v;
+    // individual_<<index>>_<<key>> — e.g. individual_0_display_zero=true
+    const indMatch = param.match(/^individual_(\d+)_(.+)$/);
+    if (indMatch) {
+      const idx = Number(indMatch[1]);
+      const key = indMatch[2];
+      if (cfg.entities?.individual?.[idx]) cfg.entities.individual[idx][key] = val;
+      handled = true;
+    }
+
+    // <<entity>>_<<key>> — e.g. solar_display_zero=true
+    if (!handled) {
+      for (const eName of entityNames) {
+        if (param.startsWith(eName + '_')) {
+          const key = param.slice(eName.length + 1);
+          if (cfg.entities?.[eName]) cfg.entities[eName][key] = val;
+          handled = true;
+          break;
+        }
+      }
+    }
+
+    // top-level — e.g. w_decimals=1
+    if (!handled) cfg[param] = val;
   }
 
   card.setConfig(cfg);

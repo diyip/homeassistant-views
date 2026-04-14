@@ -9,6 +9,83 @@ Served at: `/local/views/power-flow-card-plus/index.html`
 
 ---
 
+## Common use cases
+
+All parameters are optional and can be combined freely. Values are
+auto-coerced: `true`/`false` → boolean, numeric strings → number.
+
+### 1. Default — no parameters
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html
+```
+
+Loads with all defaults from `settings.json`.
+
+---
+
+### 2. Add a page title
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?name=Car+Park+B1
+```
+
+Shows "CAR PARK B1" above the card and sets the browser tab title.
+
+---
+
+### 3. Rename labels
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?grid_name=Mains&solar_name=Rooftop+PV&home_name=Building+A&individual_0_name=EV+Chargers
+```
+
+Renames all four circles without touching `settings.json`.
+
+---
+
+### 4. Change icons
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?solar_icon=mdi:solar-panel&individual_0_icon=mdi:car-electric
+```
+
+Overrides icons using any MDI icon name (`mdi:*`). Works for named entities
+(`grid`, `solar`, `home`) and individual entities by index.
+
+---
+
+### 5. Higher precision display
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?kw_decimals=2
+```
+
+Shows kilowatt values to 2 decimal places instead of the default 1.
+
+---
+
+### 6. Calm wall display
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?kw_decimals=0&max_flow_rate=2
+```
+
+Rounds kW values to whole numbers and slows flow animations — good for a
+monitor that people glance at rather than read closely.
+
+---
+
+### 7. Full combination
+
+```
+https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?name=Car+Park+B1&grid_name=Mains&solar_name=Rooftop+PV&home_name=Building+A&solar_icon=mdi:solar-panel&individual_0_name=EV+Chargers&individual_0_icon=mdi:car-electric&kw_decimals=2&max_flow_rate=3
+```
+
+Title, renamed labels, custom icons, precision, and animation speed — all combined.
+
+---
+
 ## How it works
 
 ```
@@ -140,26 +217,140 @@ valid state remains displayed.
 
 ## URL parameters
 
-All parameters are optional. Numeric and boolean values override the corresponding
-fields in `settings.json`; entity name overrides apply to the matching entity's
-`name` field. Defaults are whatever is set in `settings.json`.
+All parameters are optional. Defaults come from `settings.json` via `data.json`.
 
-| Parameter | Overrides | Description |
+Values are automatically coerced to the right JS type:
+- `"true"` / `"false"` → boolean
+- numeric strings → number
+- everything else → string
+
+**Priority:** URL parameters always override `settings.json` values.
+
+**Forward compatibility:** Any parameter key not explicitly handled is passed
+directly to the card config as a top-level key. This means new parameters
+introduced in future card versions work without any code changes — just add
+them to the URL.
+
+---
+
+### Page title — `name=...`
+
+Sets the label shown above the card and the browser tab title.
+
+```
+?name=Power+Flow
+?name=Car+Park+B1
+```
+
+---
+
+### Top-level card overrides — `key=value`
+
+Apply directly to the root card config object.
+
+| Parameter | Default | Description |
 |---|---|---|
-| `name` | _(page title only)_ | Page title shown above card; also sets `document.title` |
-| `name-grid` | `entities.grid.name` | Grid circle label |
-| `name-solar` | `entities.solar.name` | Solar circle label |
-| `name-house` | `entities.home.name` | House circle label |
-| `name-fossil` | `entities.fossil_fuel_percentage.name` | Non-fossil circle label |
-| `w_decimals` | `w_decimals` | Decimal places when displaying watts |
-| `kw_decimals` | `kw_decimals` | Decimal places when displaying kilowatts |
-| `min_flow_rate` | `min_flow_rate` | Minimum animation flow rate |
-| `max_flow_rate` | `max_flow_rate` | Maximum animation flow rate |
-| `max_expected_power` | `max_expected_power` | Max power (W) for flow speed scaling |
-| `min_expected_power` | `min_expected_power` | Min power (W) for flow speed scaling |
-| `watt_threshold` | `watt_threshold` | W value above which kW display is used |
-| `color_icon` | `color_icon` | Color circle icons by flow direction |
-| `clickable_entities` | `clickable_entities` | Enable tap/click on circles |
+| `w_decimals` | `0` | Decimal places for watt values |
+| `kw_decimals` | `1` | Decimal places for kilowatt values |
+| `min_flow_rate` | `0.5` | Slowest flow animation speed |
+| `max_flow_rate` | `7` | Fastest flow animation speed |
+| `max_expected_power` | `250000` | Power (W) at which flow runs at max speed |
+| `min_expected_power` | `10000` | Power (W) at which flow runs at min speed |
+| `watt_threshold` | `1000` | Switch from W to kW display above this value |
+| `display_zero_lines` | `false` | Show flow lines even when value is 0 |
+
+**Common examples:**
+
+```
+# Show more decimal places
+?kw_decimals=2
+
+# Show flow lines at zero (useful for monitoring idle state)
+?display_zero_lines=true
+
+# Slow down animations for a calmer display
+?max_flow_rate=3
+
+# Switch to kW earlier (e.g. for a high-power site)
+?watt_threshold=500
+
+# Combine multiple overrides
+?kw_decimals=2&display_zero_lines=true&max_flow_rate=3
+```
+
+---
+
+### Named entity overrides — `entityname_key=value`
+
+Override any field of a named entity. Prefix the key with the entity name and `_`.
+
+Named entities: `grid`, `solar`, `home`, `fossil_fuel_percentage`
+
+| Example | Effect |
+|---|---|
+| `?grid_name=Mains` | Rename grid label |
+| `?solar_name=PV+Roof` | Rename solar label |
+| `?home_name=Office` | Rename home label |
+| `?solar_display_zero=true` | Show solar circle even at 0 W |
+| `?grid_display_zero_tolerance=100` | Treat grid < 100 W as zero |
+| `?fossil_fuel_percentage_color_icon=false` | Disable colour icon for non-fossil |
+
+**Common examples:**
+
+```
+# Rename labels for a specific location
+?grid_name=Mains&solar_name=Rooftop+PV&home_name=Building+A
+
+# Keep solar circle visible even at night
+?solar_display_zero=true
+
+# Combine with a page title
+?name=Building+A&grid_name=Mains&solar_name=Rooftop+PV
+```
+
+---
+
+### Individual entity overrides — `individual_N_key=value`
+
+Override any field of an individual entity. Index `N` is 0-based, matching the
+order of the `individual` array in `settings.json`.
+
+| Example | Effect |
+|---|---|
+| `?individual_0_name=EV` | Rename first individual label |
+| `?individual_0_color_icon=false` | Disable colour icon for first individual |
+| `?individual_0_display_zero=true` | Show first individual even at 0 W |
+| `?individual_1_name=HVAC` | Rename second individual label |
+
+**Common examples:**
+
+```
+# Rename individual devices
+?individual_0_name=EV+Chargers&individual_1_name=HVAC
+
+# Show all individuals even at zero (useful for monitoring)
+?individual_0_display_zero=true&individual_1_display_zero=true
+```
+
+> **Note:** `display_zero: false` for individual entities does not hide the
+> circle in power-flow-card-plus v0.3.2 — this is a card limitation.
+
+---
+
+### Full example URL
+
+```
+https://<ha-host>/local/views/power-flow-card-plus/index.html
+  ?name=Car+Park+B1
+  &kw_decimals=2
+  &display_zero_lines=true
+  &solar_name=Rooftop+PV
+  &solar_display_zero=true
+  &individual_0_name=EV+Chargers
+  &individual_0_display_zero=true
+```
+
+(Line breaks added for readability — use as a single URL.)
 
 ---
 

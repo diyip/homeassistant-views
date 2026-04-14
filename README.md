@@ -162,9 +162,26 @@ See each view's README for URL parameters, data.json schema, chart implementatio
 
 ```yaml
 type: iframe
-url: http://<ha-host>/local/views/<name>/index.html
-aspect_ratio: "75"
+url: https://<ha-host>/local/views/<name>/index.html
+layout_options:
+  grid_rows: auto    # Auto-Height — iframe fits the card's natural height
 ```
+
+> **Note:** Use **Auto-Height** (grid_rows: auto) rather than a fixed `aspect_ratio`.
+> A fixed aspect ratio makes the iframe taller than the card content, causing the
+> card to float centred in empty space.
+
+### Embedding in external pages
+
+To embed these views in iframes on other domains, add to `configuration.yaml`:
+
+```yaml
+http:
+  use_x_frame_options: false
+```
+
+Then restart HA. This removes the `X-Frame-Options: SAMEORIGIN` header from all
+HA responses, allowing the `/local/views/` pages to be framed from any origin.
 
 ---
 
