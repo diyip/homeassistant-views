@@ -14,6 +14,29 @@ Served at: `/local/views/power-flow-card-plus/index.html`
 All parameters are optional and can be combined freely. Values are
 auto-coerced: `true`/`false` → boolean, numeric strings → number.
 
+### Passing any card parameter
+
+The URL param system is **not limited to the examples below**. Any configuration
+key supported by the card can be passed as a URL parameter — top-level, named
+entity, or individual entity.
+
+For the full list of available parameters, refer to the card's documentation:
+[github.com/flixlix/power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus)
+
+**How to translate a card config key to a URL param:**
+
+| Card config (`settings.json`) | URL parameter |
+|---|---|
+| `"kw_decimals": 2` (top-level) | `?kw_decimals=2` |
+| `"solar": { "name": "PV" }` | `?solar_name=PV` |
+| `"solar": { "display_zero": true }` | `?solar_display_zero=true` |
+| `"individual": [{ "name": "EV" }]` | `?individual_0_name=EV` |
+| `"individual": [{ "color_icon": false }]` | `?individual_0_color_icon=false` |
+
+Any key not recognised as a named-entity or individual override is applied
+directly to the root card config — so new parameters from future card versions
+work without any code changes.
+
 ### 1. Default — no parameters
 
 ```
