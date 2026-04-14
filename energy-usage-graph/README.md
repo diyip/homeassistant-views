@@ -8,12 +8,91 @@ Served at: `/local/views/energy-usage-graph/index.html`
 
 ---
 
+## Common use cases
+
+### 1. Default — today
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html
+```
+
+Shows today 00:00 – 23:00 Bangkok time.
+
+---
+
+### 2. Add a page title
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy
+```
+
+---
+
+### 3. Show yesterday + today
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?day=1
+```
+
+Start shifts back N days to 00:00; end is always today 23:00.
+
+---
+
+### 4. Show the past week
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?day=6
+```
+
+Six days ago 00:00 through today 23:00. Maximum is `day=6` (7 days total).
+
+---
+
+### 5. Rolling window
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?hours=36
+```
+
+Last 36 hours from now, rolling. Maximum is `hours=168` (7 days).
+
+---
+
+### 6. Show date label
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?show_date=true
+```
+
+Shows the date above the chart (hidden by default).
+
+---
+
+### 7. Full combination
+
+```
+https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&day=6&show_date=true
+```
+
+---
+
+## URL parameters
+
+| Parameter | Default | Description |
+|---|---|---|
+| `name` | _(none)_ | Page title shown above chart; also sets `document.title` |
+| `day` | `0` | Days back from today: `0`=today only, `6`=six days ago to today. Start is N days ago 00:00 Bangkok, end is always today 23:00. Max `6`. |
+| `hours` | _(none)_ | Rolling window: last N hours from now. Max `168`. Takes effect only when `day` is not set. |
+| `show_date` | `false` | Show the date label above the chart |
+
+---
+
 ## How it works
 
 ```
 HA WebSocket API
   └─ energy/get_prefs              discovers grid/solar/export entities
-  └─ statistics_during_period      fetches today's hourly kWh changes
+  └─ statistics_during_period      fetches last 7 days of hourly kWh changes
         │
         ▼
   update.py  ──writes──  data.json  ──fetch──  index.html (ECharts)
@@ -36,13 +115,12 @@ grid source  →  stat_energy_from  →  role: grid_from  (consumption, kWh)
 solar source →  stat_energy_from  →  role: solar      (generation, kWh)
 ```
 
-`flow_from[]` / `flow_to[]` nested arrays are **not** used.
-
 ### 2. Statistics fetch (`recorder/statistics_during_period`)
 
 - Period: `hour`, type: `change` (delta per hour, not cumulative)
-- Range: today midnight → now (Bangkok time)
-- Timestamps returned as Unix **milliseconds** (13-digit integers)
+- Range: last 7 days from now (Bangkok time)
+- Timestamps stored as absolute UTC milliseconds floored to the hour boundary
+  — unique across days, used directly as ECharts x-values
 
 ### 3. Derived values
 
@@ -52,37 +130,42 @@ grid_consumed = grid_from  (raw from HA)
 grid_exported = −grid_to   (negated for below-axis rendering)
 ```
 
-### 4. Yesterday fallback
+### 4. Display window (index.html)
 
-If today has no data yet (e.g. at midnight), `update.py` automatically
-re-fetches yesterday's full day and labels the chart with yesterday's date.
-Once today's first hourly stat arrives, the chart switches back automatically.
+`index.html` slices `data.json` to the requested window at render time:
+
+- **Default / `?day=0`** — today midnight to 23:00 Bangkok
+- **`?day=N`** — N days ago midnight to today 23:00 Bangkok
+- **`?hours=N`** — rolling `Date.now() − N hours` to now
 
 ---
 
 ## data.json schema
 
-Written to `/config/www/views/energy-usage-graph/data.json`:
+Written to `<ha-root>/www/views/energy-usage-graph/data.json`
+(inside container: `/config/www/views/energy-usage-graph/data.json`).
 
 ```json
 {
-  "date":          "2026-04-11",
-  "start_ms":      1775840400000,
-  "end_ms":        1775922000000,
-  "timestamps":    [1775840400000, 1775844000000, ...],
-  "grid_consumed": [1.234, 0.987, ...],
-  "solar_used":    [0.0,   1.456, ...],
-  "grid_exported": [-0.0,  -0.321, ...],
-  "updated":       "2026-04-11T09:05:00.123456+07:00"
+  "date":            "2026-04-14",
+  "start_ms":        1775235600000,
+  "end_ms":          1775840400000,
+  "hours_available": 167,
+  "timestamps":      [1775235600000, 1775239200000, ...],
+  "grid_consumed":   [1.234, 0.987, ...],
+  "solar_used":      [0.0,   1.456, ...],
+  "grid_exported":   [-0.0,  -0.321, ...],
+  "updated":         "2026-04-14T14:05:00+07:00"
 }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `date` | string | Date label shown on chart (`YYYY-MM-DD`) |
-| `start_ms` | int | Midnight of the displayed day (Unix ms) |
-| `end_ms` | int | `start_ms + 23 h` — matches HA's `getSuggestedMax` |
-| `timestamps` | int[] | Hour-start timestamps (Unix ms) for hours with any data |
+| `date` | string | Today's date (`YYYY-MM-DD`) |
+| `start_ms` | int | Oldest available data point (Unix ms) |
+| `end_ms` | int | Time of last update (Unix ms) |
+| `hours_available` | int | Number of hourly buckets in this file |
+| `timestamps` | int[] | UTC ms timestamps floored to hour boundary |
 | `grid_consumed` | float[] | Grid consumption per hour (kWh, ≥ 0) |
 | `solar_used` | float[] | Net solar used locally per hour (kWh, ≥ 0) |
 | `grid_exported` | float[] | Grid export per hour (kWh, ≤ 0, negative for chart) |
@@ -104,17 +187,14 @@ Rendered with **ECharts** (`/local/echarts.min.js`), matching HA's visual style.
 | Grid consumed | `--energy-grid-consumption-color` | `#488fc2` |
 | Grid exported | `--energy-grid-return-color` | `#8353d1` |
 
-Bar fill uses 50% alpha (`color + "7F"`) with full-opacity border — matching
-HA's `getEnergyColor(color, true)` behaviour.
+Bar fill uses 50% alpha (`color + "7F"`), matching HA's `getEnergyColor(color, true)`.
 
 ### Axis behaviour
 
-- `xAxis.type: "time"`, `min: start_ms`, `max: end_ms` (23:00 today)
-- `end_ms = start + 23 h` mirrors HA's `getSuggestedMax` which rounds
-  `endOfToday()` (23:59:59) down to the hour for the hourly period
+- `xAxis.type: "time"`, `min/max` computed from the requested window
+- Date labels appear at midnight boundaries when the chart spans multiple days
 - `barCategoryGap: "15%"` tuned to match HA's bar density
-- Rounded caps: top-left/top-right on the topmost positive bar per column;
-  bottom-left/bottom-right on the bottommost negative bar per column
+- Rounded caps: top corners on positive bars, bottom corners on export bars
 
 ### Tooltip
 
@@ -124,16 +204,8 @@ when more than one positive series is visible.
 
 ### Theme
 
-Follows `prefers-color-scheme`. Reloads the page on system theme change
-to re-initialise ECharts with the correct dark/light palette.
-
----
-
-## URL parameters
-
-| Parameter | Default | Description |
-|---|---|---|
-| `name` | _(none)_ | Page title shown above chart; also sets `document.title` |
+Follows `prefers-color-scheme`. Reloads on system theme change to
+re-initialise ECharts with the correct dark/light palette.
 
 ---
 
@@ -157,7 +229,8 @@ to re-initialise ECharts with the correct dark/light palette.
 ## Visual comparison
 
 ```bash
-cd /config/myapp/views/energy-usage-graph
+cd <ha-root>/myapp/views/energy-usage-graph   # host path
+# or inside the container: cd /config/myapp/views/energy-usage-graph
 
 python3 compare.py --save-session   # once per HA instance — saves shared session
 python3 compare.py                  # → ~/tmp/views-compare/energy-usage-graph/compare_light.png
