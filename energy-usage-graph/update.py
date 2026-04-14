@@ -101,7 +101,7 @@ def build_result(day_start: datetime,
     return {
         "date":          day_start.strftime("%Y-%m-%d"),
         "start_ms":      int(day_start.timestamp() * 1000),
-        "end_ms":        int((day_start + timedelta(hours=23)).timestamp() * 1000),
+        "end_ms":        int((day_start + timedelta(hours=24)).timestamp() * 1000),
         "timestamps":    [hour_ts(h) for h in all_hours],
         "grid_consumed": [round(grid_from.get(h, 0.0), 3) for h in all_hours],
         "solar_used":    [round(max(0.0, solar.get(h, 0.0) - grid_to.get(h, 0.0)), 3)
