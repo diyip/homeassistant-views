@@ -57,7 +57,8 @@
 <script>
   const p    = new URLSearchParams(window.location.search.replace(/^\?+/, ''));
   const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const hours = Math.min(Math.max(parseInt(p.get('hours') || '24', 10), 1), 48);
+  const hoursParam = p.get('hours');
+  const hours = hoursParam ? Math.min(Math.max(parseInt(hoursParam, 10), 1), 48) : null;
 
   const viewName = p.get('name');
   if (viewName) {
@@ -201,10 +202,20 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('chart-date').textContent = data.date || '';
 
-      // Slice to the requested window
-      const displayEnd   = Date.now();
-      const displayStart = displayEnd - hours * 3_600_000;
-      const mask = data.timestamps.map(t => t >= displayStart);
+      // Compute display window:
+      // default → today 00:00–24:00 Bangkok time (UTC+7)
+      // ?hours=N → rolling last N hours from now
+      let displayStart, displayEnd;
+      if (hours) {
+        displayEnd   = Date.now();
+        displayStart = displayEnd - hours * 3_600_000;
+      } else {
+        const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000;
+        const nowBangkok = Date.now() + BANGKOK_OFFSET_MS;
+        displayStart = nowBangkok - (nowBangkok % 86_400_000) - BANGKOK_OFFSET_MS;
+        displayEnd   = displayStart + 86_400_000;
+      }
+      const mask = data.timestamps.map(t => t >= displayStart && t < displayEnd);
 
       const timestamps   = data.timestamps.filter((_, i) => mask[i]);
       const gridConsumed = data.grid_consumed.filter((_, i) => mask[i]);
