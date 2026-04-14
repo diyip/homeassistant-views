@@ -112,7 +112,7 @@
             if (d.getHours() === 0 && d.getMinutes() === 0 && d.getSeconds() === 0) {
               return `{bold|${d.toLocaleDateString('en', { month: 'short', day: 'numeric' })}}`;
             }
-            return `${String(dt.getHours()).padStart(2, '0')}:00`;
+            return `${String(d.getHours()).padStart(2, '0')}:00`;
           },
           rich: { bold: { fontWeight: 'bold' } },
         },
