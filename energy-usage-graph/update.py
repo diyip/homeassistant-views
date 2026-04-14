@@ -30,7 +30,7 @@ from lib.ha import HaWebSocket, configure_logging, error_output, load_token, wri
 
 OUTPUT_FILE  = "/config/www/views/energy-usage-graph/data.json"
 BANGKOK      = timezone(timedelta(hours=7))
-WINDOW_HOURS = 72   # hours of data written to data.json; index.html slices this
+WINDOW_HOURS = 168   # hours of data written to data.json; index.html slices this
 
 log = configure_logging("energy-usage-graph.update")
 
