@@ -207,10 +207,9 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('chart-date').textContent = data.date || '';
 
-      // Compute display window:
       // Compute display window (Bangkok UTC+7):
-      //   default / ?day=0  → today 00:00 – today 23:00
-      //   ?day=N            → N days ago 00:00 – today 23:00
+      //   default / ?days=1 → today 00:00 – today 23:00
+      //   ?days=N           → (N-1) days ago 00:00 – today 23:00
       //   ?hours=N          → rolling last N hours from now
       const BANGKOK_MS = 7 * 60 * 60 * 1000;
       const nowBangkok = Date.now() + BANGKOK_MS;
