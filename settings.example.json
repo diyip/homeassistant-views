@@ -6,7 +6,7 @@
       "grid": {
         "entity": "sensor.<grid_power_entity>",
         "name": "Grid",
-        "color_icon": true
+        "color_icon": "color_dynamically"
       },
       "solar": {
         "entity": "sensor.<solar_power_entity>",
