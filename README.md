@@ -31,6 +31,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/v
 │       ├── settings.json             ← instance config: ha_url, card params  (gitignored)
 │       ├── settings.example.json     ← template, safe to commit
 │       ├── deploy.sh                 ← run after adding or editing a view
+│       ├── user_guide.html            ← non-technical user guide (share freely)
 │       ├── rotate_token.py           ← automated token rotation (runs via HA automation)
 │       ├── test_token_rotation.py    ← safe QA test: create/verify/delete a temp token
 │       ├── token_rotation_state.json ← rotation state (gitignored, runtime)
@@ -200,6 +201,12 @@ python3 /config/myapp/views/test_token_rotation.py
 | [power-flow-card-plus](power-flow-card-plus/README.md) | 15 s | `/local/views/power-flow-card-plus/index.html` | [power-flow-card-plus](https://github.com/flixlix/power-flow-card-plus) component |
 
 See each view's README for URL parameters, data.json schema, chart implementation details, and visual comparison instructions.
+
+**User guide** (`user_guide.html`) — a non-technical reference for users who want to share, embed, or customise view URLs. Accessible at `/local/views/user_guide.html`. Deploy manually after editing:
+
+```bash
+cp /config/myapp/views/user_guide.html /config/www/views/user_guide.html
+```
 
 ---
 
