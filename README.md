@@ -31,7 +31,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/v
 │       ├── settings.json             ← instance config: ha_url, card params  (gitignored)
 │       ├── settings.example.json     ← template, safe to commit
 │       ├── deploy.sh                 ← run after adding or editing a view
-│       ├── user_guide.html            ← non-technical user guide (share freely)
+│       ├── user_guide.html           ← non-technical user guide (share freely)
 │       ├── rotate_token.py           ← automated token rotation (runs via HA automation)
 │       ├── test_token_rotation.py    ← safe QA test: create/verify/delete a temp token
 │       ├── token_rotation_state.json ← rotation state (gitignored, runtime)
