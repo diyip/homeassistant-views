@@ -35,6 +35,14 @@ for view_dir in "$VIEWS_SRC"/*/; do
     echo "deployed: $name"
 done
 
+# Deploy standalone HTML files (e.g. user_guide.html) from the views root
+for html_file in "$VIEWS_SRC"/*.html; do
+    [[ ! -f "$html_file" ]] && continue
+    cp "$html_file" "$VIEWS_WWW/$(basename "$html_file")"
+    [ -n "$WWW_OWNER" ] && chown "$WWW_OWNER" "$VIEWS_WWW/$(basename "$html_file")" 2>/dev/null || true
+    echo "deployed: $(basename "$html_file")"
+done
+
 if [[ $package_deployed -eq 1 ]]; then
     echo "Done. Restart HA to load package (card.yaml) changes."
 else

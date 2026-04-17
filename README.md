@@ -50,7 +50,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/v
     ├── echarts.min.js                ← required by energy-usage-graph
     ├── mdi.min.js                    ← required by power-flow-card-plus
     └── views/
-        ├── user_guide.html           ← deployed manually (see below)
+        ├── user_guide.html           ← deployed by deploy.sh
         └── <name>/
             ├── index.html            ← deployed by deploy.sh
             └── data.json             ← runtime, written by update.py
@@ -136,10 +136,9 @@ curl -fsSL "https://cdn.jsdelivr.net/npm/@mdi/js/mdi.min.js" \
 
 ```bash
 bash /config/myapp/views/deploy.sh
-cp /config/myapp/views/user_guide.html /config/www/views/user_guide.html
 ```
 
-> `deploy.sh` handles view directories only. `user_guide.html` must be copied manually.
+> Deploys all view directories and standalone HTML files (e.g. `user_guide.html`) to `www/views/`.
 
 ### 6. Restart Home Assistant
 
@@ -206,11 +205,7 @@ python3 /config/myapp/views/test_token_rotation.py
 
 See each view's README for URL parameters, data.json schema, chart implementation details, and visual comparison instructions.
 
-**User guide** (`user_guide.html`) — a non-technical reference for users who want to share, embed, or customise view URLs. Accessible at `/local/views/user_guide.html`. Deploy manually after editing:
-
-```bash
-cp /config/myapp/views/user_guide.html /config/www/views/user_guide.html
-```
+**User guide** (`user_guide.html`) — a non-technical reference for users who want to share, embed, or customise view URLs. Accessible at `/local/views/user_guide.html`. Deployed automatically by `deploy.sh`.
 
 ---
 
