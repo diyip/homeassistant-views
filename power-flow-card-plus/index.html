@@ -23,6 +23,7 @@
     Individual overrides (individual_<<index>>_<<key>>=<<value>>):
       Examples:
         individual_0_display_zero=true
+        show_individual_0=false
         individual_1_name=EV+Charger+2
         individual_2_color_icon=false
 -->
@@ -31,6 +32,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'">
   <title>Power Flow</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -160,42 +163,60 @@
   const cfg = JSON.parse(JSON.stringify(initData._config || {}));
   cfg.type = "custom:power-flow-card-plus";
 
+  const BLOCKED = new Set(['__proto__', 'constructor', 'prototype']);
+  const hideIndividual = new Set();
+
   for (const [param, raw] of p.entries()) {
-    if (param === 'name') continue; // handled separately below
+    if (param === 'name') continue;
+
+    if (param === 'show_non_fossil' && raw === 'false' && cfg.entities) {
+      delete cfg.entities.fossil_fuel_percentage;
+      continue;
+    }
+
+    const hideMatch = param.match(/^show_individual_(\d+)$/);
+    if (hideMatch && raw === 'false') {
+      hideIndividual.add(parseInt(hideMatch[1], 10));
+      continue;
+    }
+
     const val = coerce(raw);
     let handled = false;
 
-    // individual_<<index>>_<<key>> — e.g. individual_0_display_zero=true
     const indMatch = param.match(/^individual_(\d+)_(.+)$/);
     if (indMatch) {
       const idx = Number(indMatch[1]);
       const key = indMatch[2];
-      if (cfg.entities?.individual?.[idx]) cfg.entities.individual[idx][key] = val;
+      if (cfg.entities?.individual?.[idx] && !BLOCKED.has(key)) cfg.entities.individual[idx][key] = val;
       handled = true;
     }
 
-    // <<entity>>_<<key>> — e.g. solar_display_zero=true
     if (!handled) {
       for (const eName of entityNames) {
         if (param.startsWith(eName + '_')) {
           const key = param.slice(eName.length + 1);
-          if (cfg.entities?.[eName]) cfg.entities[eName][key] = val;
+          if (cfg.entities?.[eName] && !BLOCKED.has(key)) cfg.entities[eName][key] = val;
           handled = true;
           break;
         }
       }
     }
 
-    // top-level — e.g. w_decimals=1
-    if (!handled) cfg[param] = val;
+    if (!handled && !BLOCKED.has(param)) cfg[param] = val;
+  }
+
+  if (cfg.entities?.individual && hideIndividual.size) {
+    [...hideIndividual].sort((a, b) => b - a).forEach(i => cfg.entities.individual.splice(i, 1));
   }
 
   if (initData._error || !cfg.entities) {
     const msg = initData._error
       ? `Data unavailable: ${initData._error}`
       : 'Config not ready — check settings.json and data.json';
-    document.getElementById('wrap').innerHTML =
-      `<p style="color:var(--secondary-text-color);font-size:13px;text-align:center;padding:16px">${msg}</p>`;
+    const errP = document.createElement('p');
+    errP.style.cssText = 'color:var(--secondary-text-color);font-size:13px;text-align:center;padding:16px';
+    errP.textContent = msg;
+    document.getElementById('wrap').replaceChildren(errP);
     throw new Error(msg);
   }
 

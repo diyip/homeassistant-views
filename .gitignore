@@ -3,6 +3,7 @@ secrets.json
 settings.json
 
 # Runtime data — never commit
+token_rotation_state.json
 */data.json
 */ha_session.json
 */tmp/

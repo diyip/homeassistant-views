@@ -108,6 +108,9 @@ Any key not recognised as a named-entity or individual override is applied
 directly to the root card config — so new parameters from future card versions
 work without any code changes.
 
+> **Security note:** Keys `__proto__`, `constructor`, and `prototype` are blocked
+> and silently ignored regardless of where they appear in the URL.
+
 ---
 
 ## How it works

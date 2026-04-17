@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'">
+  <title>Energy Monitoring Views Guide</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-alt: #f8fbfd;
+      --text: #1f2937;
+      --text-sec: #6b7280;
+      --accent: #03a9f4;
+      --border: #e5e7eb;
+      --code-bg: #f3f7fb;
+      --code-border: #d6e2ee;
+      --tag-bg: #e1f3fe;
+      --tag-text: #0277bd;
+      --copy-bg: #e8f5e9;
+      --copy-text: #2e7d32;
+      --warn-bg: #fff8e1;
+      --warn-border: #ffe082;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      color-scheme: light dark;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1720;
+        --surface: #18212c;
+        --surface-alt: #111a24;
+        --text: #e5e7eb;
+        --text-sec: #9ca3af;
+        --border: #2a3642;
+        --code-bg: #12202c;
+        --code-border: #294151;
+        --tag-bg: #0f2b3e;
+        --tag-text: #7dd3fc;
+        --copy-bg: #18321d;
+        --copy-text: #8bd49a;
+        --warn-bg: #2a2412;
+        --warn-border: #7c6400;
+        --shadow: none;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Roboto', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      padding: 24px 16px 72px;
+    }
+
+    .page {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      padding: 28px 0 36px;
+    }
+
+    .header h1 {
+      font-size: 30px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-sec);
+      font-size: 16px;
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    .intro-card,
+    .quick-start,
+    .callout,
+    .how-to,
+    .note,
+    .embed-box,
+    .section-card,
+    .view-card,
+    .preset-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .intro-card,
+    .quick-start,
+    .callout,
+    .how-to,
+    .note,
+    .embed-box,
+    .section-card {
+      padding: 18px 20px;
+      margin: 14px 0;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 42px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent);
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 24px 0 12px;
+    }
+
+    p { margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol {
+      margin: 0 0 12px 22px;
+    }
+
+    li { margin-bottom: 8px; }
+
+    .subtle {
+      color: var(--text-sec);
+    }
+
+    .badge-row,
+    .legend,
+    .use-cases,
+    .rule-list,
+    .presets,
+    .view-cards {
+      display: grid;
+      gap: 16px;
+    }
+
+    .badge-row {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin-top: 18px;
+    }
+
+    .info-pill {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .info-pill strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    .view-cards,
+    .use-cases,
+    .presets {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .view-card,
+    .preset-card {
+      padding: 18px;
+    }
+
+    .view-card .label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .view-card .title,
+    .preset-card .title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .view-card .desc,
+    .preset-card .desc {
+      font-size: 14px;
+      color: var(--text-sec);
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .quick-start {
+      border-left: 4px solid var(--accent);
+    }
+
+    .callout {
+      background: var(--warn-bg);
+      border-color: var(--warn-border);
+    }
+
+    .rule-list {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      margin-top: 12px;
+    }
+
+    .rule-item {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .rule-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .url-block {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .url-block code,
+    .embed-box code,
+    code.inline-code,
+    td code,
+    .how-to code {
+      font-family: 'Roboto Mono', 'Courier New', monospace;
+      font-size: 12.5px;
+    }
+
+    .url-block code {
+      color: var(--text);
+      word-break: break-all;
+      flex: 1;
+      line-height: 1.6;
+    }
+
+    .copy-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid var(--code-border);
+      color: var(--text-sec);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover { background: var(--border); }
+    .copy-btn.copied {
+      background: var(--copy-bg);
+      color: var(--copy-text);
+      border-color: var(--copy-text);
+    }
+
+    .how-to {
+      border-left: 4px solid var(--accent);
+    }
+
+    .example { margin: 16px 0; }
+    .ex-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sec);
+      margin-bottom: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+    }
+
+    th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-sec);
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--code-bg); }
+
+    td code,
+    .how-to code,
+    code.inline-code {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .legend {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      margin: 10px 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .embed-pre-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .embed-box pre {
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 56px;
+      font-size: 13px;
+      color: var(--text-sec);
+    }
+
+    @media (max-width: 640px) {
+      .header h1 { font-size: 25px; }
+      .url-block { flex-direction: column; }
+      .copy-btn { align-self: flex-end; }
+      .embed-pre-row { flex-direction: column; }
+      body { padding-left: 12px; padding-right: 12px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Energy Monitoring Views Guide</h1>
+    <p>Browser-based dashboards for live power flow and historical energy usage. Open directly in a browser or embed into another web page or dashboard.</p>
+  </div>
+
+  <div class="intro-card">
+    <p><strong>Who this guide is for</strong></p>
+    <p class="subtle">This guide is for users who want to view, share, display, or embed energy dashboards for operational monitoring, wall displays, or reporting.</p>
+    <div class="badge-row">
+      <div class="info-pill"><strong>Works in modern browsers</strong><span class="subtle">Desktop, laptop, tablet, or TV browser</span></div>
+      <div class="info-pill"><strong>No login in the view itself</strong><span class="subtle">Useful for display screens and shared links</span></div>
+      <div class="info-pill"><strong>Customizable by URL</strong><span class="subtle">Title, labels, display options, and time range</span></div>
+    </div>
+  </div>
+
+  <h2>Start Here</h2>
+  <div class="quick-start">
+    <ol>
+      <li><strong>Open the live Power Flow view</strong></li>
+    </ol>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+    <ol start="2">
+      <li><strong>Open the historical Energy Usage Graph</strong></li>
+    </ol>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+    <ol start="3">
+      <li><strong>Optional:</strong> add URL parameters such as <code class="inline-code">?name=Car+Park+B1</code> to customize the display.</li>
+    </ol>
+  </div>
+
+  <h2>Available Views</h2>
+  <div class="view-cards">
+    <div class="view-card">
+      <div class="label">Real-time</div>
+      <div class="title">Power Flow</div>
+      <div class="desc">Shows current power moving between grid, solar, building load, and EV chargers.</div>
+      <span class="badge">Auto-refresh every 15 seconds</span>
+    </div>
+    <div class="view-card">
+      <div class="label">Historical</div>
+      <div class="title">Energy Usage Graph</div>
+      <div class="desc">Shows hourly energy trends for solar usage, grid import, and grid export.</div>
+      <span class="badge">Auto-refresh every 5 minutes</span>
+    </div>
+  </div>
+
+  <h2>Common Use Cases</h2>
+  <div class="use-cases">
+    <div class="section-card">
+      <h3>📺 Wall Display</h3>
+      <p class="subtle">Show live energy status on a TV or monitor in a control room, lobby, or operations area.</p>
+    </div>
+    <div class="section-card">
+      <h3>📊 Daily Monitoring</h3>
+      <p class="subtle">Let operations or facility teams quickly check current usage and recent energy trends.</p>
+    </div>
+    <div class="section-card">
+      <h3>🔗 Embedded View</h3>
+      <p class="subtle">Place the dashboard inside another web page, portal, or dashboard using an iframe.</p>
+    </div>
+    <div class="section-card">
+      <h3>⚡ Quick Troubleshooting</h3>
+      <p class="subtle">Use the live view to confirm whether load, solar, or EV charging behavior looks normal.</p>
+    </div>
+  </div>
+
+  <h2>Customize via URL Parameters</h2>
+  <p>Both views can be customized by adding parameters after a <code class="inline-code">?</code>. Use <code class="inline-code">&amp;</code> to join multiple parameters.</p>
+  <div class="how-to">
+    <p><code>https://.../index.html<strong>?name=My+Title&amp;option=value</strong></code></p>
+    <div class="rule-list">
+      <div class="rule-item">
+        <strong>Spaces</strong>
+        Use <code>+</code> for spaces, such as <code>Car+Park+B1</code>.
+      </div>
+      <div class="rule-item">
+        <strong>No quotation marks</strong>
+        Write plain values such as <code>true</code>, <code>false</code>, or <code>MEA</code>.
+      </div>
+      <div class="rule-item">
+        <strong>Case-sensitive</strong>
+        Parameter names should match exactly as documented.
+      </div>
+      <div class="rule-item">
+        <strong>Join multiple options</strong>
+        Example: <code>name=Site+A&amp;show_date=true</code>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><strong>Tip:</strong> Start with the default URL first. Once the view works, add one parameter at a time. This makes it easier to spot formatting mistakes.</p>
+  </div>
+
+  <h2>Power Flow View</h2>
+  <p>Shows live power flow in watts or kilowatts between major energy sources and loads.</p>
+
+  <div class="section-card">
+    <h3>What each item means</h3>
+    <ul>
+      <li><strong>Grid</strong> — power drawn from or exported to the electricity grid.</li>
+      <li><strong>Solar</strong> — current power generated by solar panels.</li>
+      <li><strong>Home</strong> — total building or site consumption.</li>
+      <li><strong>EV Chargers</strong> — charging load from electric vehicle chargers.</li>
+      <li><strong>Non Fossil</strong> — percentage of electricity supplied by the grid that comes from renewable or low-carbon sources, based on external data.</li>
+    </ul>
+  </div>
+
+  <h3>Recommended Presets</h3>
+  <div class="presets">
+    <div class="preset-card">
+      <div class="title">Wall Display</div>
+      <div class="desc">Use slower animation and one decimal place for easier viewing from a distance.</div>
+      <div class="url-block">
+        <code>?max_flow_rate=2&amp;kw_decimals=1</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="title">Hide Non Fossil</div>
+      <div class="desc">Remove the Non Fossil indicator for a simpler layout.</div>
+      <div class="url-block">
+        <code>?show_non_fossil=false</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="title">Hide EV Chargers</div>
+      <div class="desc">Remove the EV Chargers node when it is not relevant to your site.</div>
+      <div class="url-block">
+        <code>?show_individual_0=false</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="title">Site-Specific Naming</div>
+      <div class="desc">Set a title and rename labels to match your site naming convention.</div>
+      <div class="url-block">
+        <code>?name=Car+Park+B1&amp;grid_name=Mains&amp;solar_name=Rooftop+PV&amp;home_name=Building+A</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Examples</h3>
+
+  <div class="example">
+    <div class="ex-label">Default</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Set dashboard title</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?name=Car+Park+B1</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Hide the Non Fossil indicator</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?show_non_fossil=false</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Hide the EV Chargers node</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?show_individual_0=false</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Rename labels for your site</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?grid_name=Mains&amp;solar_name=Rooftop+PV&amp;home_name=Building+A</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Wall display setup</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?max_flow_rate=2&amp;kw_decimals=1</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Full example</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?name=Car+Park+B1&amp;show_non_fossil=false&amp;grid_name=Mains&amp;solar_name=Rooftop+PV&amp;home_name=Building+A&amp;kw_decimals=1</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <h3>Options Reference</h3>
+  <table>
+    <thead><tr><th>Category</th><th>Option</th><th>What it does</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td>Display</td><td><code>name</code></td><td>Title shown above the card</td><td>none</td></tr>
+      <tr><td>Display</td><td><code>show_non_fossil</code></td><td>Show or hide the Non Fossil circle (<code>true</code> / <code>false</code>)</td><td><code>true</code></td></tr>
+      <tr><td>Formatting</td><td><code>kw_decimals</code></td><td>Decimal places for kilowatt values</td><td><code>0</code></td></tr>
+      <tr><td>Formatting</td><td><code>max_flow_rate</code></td><td>Animation speed. Lower values are slower and usually better for wall displays.</td><td><code>6</code></td></tr>
+      <tr><td>Labels</td><td><code>grid_name</code></td><td>Rename the Grid label</td><td><code>MEA</code></td></tr>
+      <tr><td>Labels</td><td><code>solar_name</code></td><td>Rename the Solar label</td><td><code>Solar</code></td></tr>
+      <tr><td>Labels</td><td><code>home_name</code></td><td>Rename the Home label</td><td><code>YIP HQ</code></td></tr>
+      <tr><td>Labels</td><td><code>individual_0_name</code></td><td>Rename the EV Chargers label</td><td><code>EV Chargers</code></td></tr>
+      <tr><td>Display</td><td><code>show_individual_0</code></td><td>Show or hide the EV Chargers node (<code>true</code> / <code>false</code>)</td><td><code>true</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Energy Usage Graph View</h2>
+  <p>Shows historical energy usage as an hourly stacked bar chart.</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="swatch" style="background:#ff9800"></div>Solar energy used on-site</div>
+    <div class="legend-item"><div class="swatch" style="background:#488fc2"></div>Energy drawn from the grid</div>
+    <div class="legend-item"><div class="swatch" style="background:#8353d1"></div>Energy exported to the grid</div>
+  </div>
+
+  <h3>Recommended Presets</h3>
+  <div class="presets">
+    <div class="preset-card">
+      <div class="title">Today with Date Label</div>
+      <div class="desc">Shows today's data with the date visible above the chart.</div>
+      <div class="url-block">
+        <code>?show_date=true</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="title">Past Week</div>
+      <div class="desc">Useful for weekly review and trend comparison.</div>
+      <div class="url-block">
+        <code>?days=7&amp;show_date=true</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+    <div class="preset-card">
+      <div class="title">Rolling 48 Hours</div>
+      <div class="desc">Useful for overnight monitoring or shift-based review.</div>
+      <div class="url-block">
+        <code>?hours=48</code>
+        <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>Examples</h3>
+
+  <div class="example">
+    <div class="ex-label">Today (default)</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Yesterday and today</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=2&amp;show_date=true</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Past week</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?days=7&amp;show_date=true</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Past 48 hours rolling</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?hours=48</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <div class="example">
+    <div class="ex-label">Past week with title</div>
+    <div class="url-block">
+      <code>https://yit.yipintsoi.net:48131/local/views/energy-usage-graph/index.html?name=Car+Park+Energy&amp;days=7&amp;show_date=true</code>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <h3>Options Reference</h3>
+  <table>
+    <thead><tr><th>Category</th><th>Option</th><th>What it does</th><th>Default</th></tr></thead>
+    <tbody>
+      <tr><td>Display</td><td><code>name</code></td><td>Title shown above the chart</td><td>none</td></tr>
+      <tr><td>Time Range</td><td><code>days</code></td><td>Number of days: <code>1</code> = today, <code>2</code> = yesterday + today, up to <code>7</code></td><td><code>1</code></td></tr>
+      <tr><td>Time Range</td><td><code>hours</code></td><td>Rolling window using the last N hours from now, up to <code>168</code></td><td>none</td></tr>
+      <tr><td>Display</td><td><code>show_date</code></td><td>Show the date above the chart (<code>true</code> / <code>false</code>)</td><td><code>false</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <p><strong>Priority rule:</strong> when both <code>days</code> and <code>hours</code> are set, <code>days</code> takes priority.</p>
+  </div>
+
+  <h2>Embedding in Another Web Page</h2>
+  <div class="embed-box">
+    <p>You can embed either view inside another web page or dashboard using an iframe.</p>
+    <div class="embed-pre-row">
+      <pre><code>&lt;iframe src="https://yit.yipintsoi.net:48131/local/views/power-flow-card-plus/index.html?name=Car+Park+B1"
+        width="100%"
+        height="500"
+        frameborder="0"&gt;
+&lt;/iframe&gt;</code></pre>
+      <button class="copy-btn" onclick="copyUrl(this)">Copy</button>
+    </div>
+  </div>
+
+  <h2>Notes and Limitations</h2>
+  <div class="section-card">
+    <ul>
+      <li>Best viewed in a modern browser such as Chrome, Edge, or Safari.</li>
+      <li>The views auto-refresh automatically — Power Flow every 15 seconds, Energy Usage Graph every 5 minutes.</li>
+      <li>If a URL does not work as expected, remove parameters and test the default URL first.</li>
+      <li>For public display screens, use a stable network connection and disable browser sleep or screen timeout if needed.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Works in modern browsers &nbsp;·&nbsp; Light and dark theme &nbsp;·&nbsp; Suitable for direct links and embedded display
+  </div>
+
+</div>
+<script>
+  function copyUrl(btn) {
+    const prev = btn.previousElementSibling;
+    navigator.clipboard.writeText(prev.textContent.trim()).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

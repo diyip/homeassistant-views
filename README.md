@@ -31,6 +31,10 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/v
 │       ├── settings.json             ← instance config: ha_url, card params  (gitignored)
 │       ├── settings.example.json     ← template, safe to commit
 │       ├── deploy.sh                 ← run after adding or editing a view
+│       ├── rotate_token.py           ← automated token rotation (runs via HA automation)
+│       ├── test_token_rotation.py    ← safe QA test: create/verify/delete a temp token
+│       ├── token_rotation_state.json ← rotation state (gitignored, runtime)
+│       ├── rotate_token.log          ← rotation log (runtime)
 │       ├── .gitignore
 │       ├── lib/
 │       │   ├── ha.py                 ← shared HA client utilities (reads secrets + settings)
@@ -62,6 +66,9 @@ Copy from the example templates and fill in instance-specific values.
 {"ha_token": "your-long-lived-access-token-here"}
 ```
 
+> **Note:** The token is rotated automatically every 180 days by `rotate_token.py`.
+> On a new instance, create a token manually once — rotation takes over from there.
+
 ### `settings.json`
 Contains the HA URL and per-view card configuration. See `settings.example.json` for the full structure.
 
@@ -80,6 +87,10 @@ Key fields:
 ### 1. Create a long-lived token
 
 HA → Profile → Long-Lived Access Tokens → Create token.
+
+Name it anything (e.g. `ha_views_setup`). Once the instance is running,
+`rotate_token.py` takes over and rotates it automatically every 180 days,
+naming each new token `ha_views_YYYYMMDD`.
 
 ### 2. Copy this folder into the container
 
@@ -132,6 +143,40 @@ Required for HA to load the shell_command and automation from the deployed packa
 ### 7. Verify
 
 Open `https://<ha-host>/local/views/<name>/index.html` — the card should show live data within one refresh interval.
+
+---
+
+## Security
+
+### Browser-side hardening (index.html)
+
+Both pages include:
+
+- **Content Security Policy** (`<meta http-equiv="Content-Security-Policy">`) —
+  restricts scripts to `'self'`, blocks external data exfiltration via `connect-src 'self'`,
+  whitelists Google Fonts explicitly.
+- **Referrer Policy** (`<meta name="referrer" content="no-referrer">`) —
+  prevents the page URL from leaking to Google Fonts on load.
+- **Prototype pollution guard** — URL params with keys `__proto__`, `constructor`,
+  or `prototype` are silently ignored before being applied to card config.
+- **Safe DOM construction** — error messages use `textContent` / `replaceChildren`,
+  never `innerHTML`, preventing XSS via server-controlled error strings.
+
+### Token rotation (`rotate_token.py`)
+
+The HA long-lived access token is rotated automatically every 180 days.
+New tokens are named `ha_views_YYYYMMDD` and have a 365-day lifespan.
+
+Scheduled via HA automation in `packages/infrastructure.yaml` — runs daily at 02:00.
+On failure: retries daily; sends `persistent_notification` + mobile push after
+3 consecutive failures; re-notifies every 7 days while still failing.
+
+State is persisted in `token_rotation_state.json` (gitignored).
+
+To QA test the rotation mechanism without touching the production token:
+```bash
+python3 /config/myapp/views/test_token_rotation.py
+```
 
 ---
 
