@@ -4,6 +4,7 @@ settings.json
 
 # Runtime data — never commit
 token_rotation_state.json
+rotate_token.log
 */data.json
 */ha_session.json
 */tmp/

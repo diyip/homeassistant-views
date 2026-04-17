@@ -171,15 +171,21 @@ Both pages include:
 The HA long-lived access token is rotated automatically every 180 days.
 New tokens are named `ha_views_YYYYMMDD` and have a 365-day lifespan.
 
-Scheduled via HA automation in `packages/infrastructure.yaml` — runs daily at 02:00.
+Scheduled via HA automation in `packages/infrastructure.yaml` (outside this repo — lives in the HA config root) — runs daily at 02:00.
 On failure: retries daily; sends `persistent_notification` + mobile push after
 3 consecutive failures; re-notifies every 7 days while still failing.
 
 State is persisted in `token_rotation_state.json` (gitignored).
+Logs are written to `rotate_token.log` (gitignored).
 
 To QA test the rotation mechanism without touching the production token:
 ```bash
 python3 /config/myapp/views/test_token_rotation.py
+```
+
+To monitor the first production run (or any run):
+```bash
+tail -f /config/myapp/views/rotate_token.log
 ```
 
 ---
