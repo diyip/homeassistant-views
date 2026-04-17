@@ -6,6 +6,8 @@
 # For each view directory containing index.html:
 #   - Copies index.html  → <ha-root>/www/views/<name>/index.html  (live immediately)
 #   - Copies card.yaml   → <ha-root>/packages/views_<name>.yaml   (requires HA restart)
+# For each standalone *.html in the views root (e.g. user_guide.html):
+#   - Copies it          → <ha-root>/www/views/<file>.html         (live immediately)
 # Never touches data.json, secrets.json, or lib/.
 
 set -euo pipefail
