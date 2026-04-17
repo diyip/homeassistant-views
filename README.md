@@ -50,6 +50,7 @@ HA automation  ──writes──  update.py  ──reads──  /config/myapp/v
     ├── echarts.min.js                ← required by energy-usage-graph
     ├── mdi.min.js                    ← required by power-flow-card-plus
     └── views/
+        ├── user_guide.html           ← deployed manually (see below)
         └── <name>/
             ├── index.html            ← deployed by deploy.sh
             └── data.json             ← runtime, written by update.py
@@ -135,7 +136,10 @@ curl -fsSL "https://cdn.jsdelivr.net/npm/@mdi/js/mdi.min.js" \
 
 ```bash
 bash /config/myapp/views/deploy.sh
+cp /config/myapp/views/user_guide.html /config/www/views/user_guide.html
 ```
+
+> `deploy.sh` handles view directories only. `user_guide.html` must be copied manually.
 
 ### 6. Restart Home Assistant
 
