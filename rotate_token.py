@@ -31,6 +31,7 @@ NOTIFY_AFTER_FAILURES  = 3
 RENOTIFY_INTERVAL_DAYS = 7
 
 STATE_FILE = str(Path(__file__).parent / "token_rotation_state.json")
+LOG_FILE   = str(Path(__file__).parent / "rotate_token.log")
 
 NOTIFY_SERVICES = [
     "persistent_notification/create",
@@ -44,6 +45,18 @@ log = configure_logging("rotate_token")
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _trim_log(max_bytes: int = 512 * 1024) -> None:
+    """Keep the log under max_bytes by discarding the oldest half when exceeded."""
+    try:
+        p = Path(LOG_FILE)
+        if not p.exists() or p.stat().st_size <= max_bytes:
+            return
+        data = p.read_bytes()
+        p.write_bytes(data[-(max_bytes // 2):])
+    except OSError:
+        pass
 
 
 def days_since(iso: str | None) -> float:
@@ -182,6 +195,7 @@ def rotate(current_token: str) -> None:
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> None:
+    _trim_log()
     state     = load_state()
     cur_token = load_token()
 
